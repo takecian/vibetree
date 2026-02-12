@@ -1,0 +1,7 @@
+[
+    {
+        "tool": "gemini",
+        "description": "Google's Gemini AI",
+        "requiredFile": ".gemini/oauth_creds.json"
+    }
+]

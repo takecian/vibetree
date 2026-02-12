@@ -1,0 +1,36 @@
+{
+  "name": "vibe-flow",
+  "version": "1.0.0",
+  "description": "Local task management with Git worktrees and AI integration",
+  "main": "bin/vibe-flow.js",
+  "bin": {
+    "vibe-flow": "./bin/vibe-flow.js"
+  },
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client && npm run build -w server",
+    "start": "node bin/vibe-flow.js"
+  },
+  "keywords": [
+    "git",
+    "kanban",
+    "ai",
+    "workflow"
+  ],
+  "author": "USER",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "open": "^10.1.0",
+    "prompts": "^2.4.2",
+    "yargs": "^17.7.2"
+  }
+}

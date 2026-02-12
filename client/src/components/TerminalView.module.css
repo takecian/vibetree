@@ -1,0 +1,14 @@
+.terminalContainer {
+    width: 100%;
+    height: 100%;
+    background-color: #0f172a;
+    padding: 8px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #334155;
+}
+
+.terminal {
+    width: 100%;
+    height: 100%;
+}

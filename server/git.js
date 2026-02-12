@@ -36,26 +36,9 @@ function setupGitRoutes(app, getState) {
         const { branchName, taskId } = req.body;
         const { repoPath } = getState();
 
-        if (!repoPath) return res.status(400).json({ error: 'Repository not selected' });
-        if (!branchName || !taskId) return res.status(400).json({ error: 'Missing branchName or taskId' });
-
         try {
-            const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
-
-            if (fs.existsSync(worktreePath)) {
-                return res.json({ success: true, path: worktreePath, message: 'Worktree already exists' });
-            }
-
-            let createBranchFlag = '';
-            try {
-                await runGit(`git rev-parse --verify ${branchName}`);
-            } catch (e) {
-                createBranchFlag = `-b ${branchName}`;
-            }
-
-            await runGit(`git worktree add ${createBranchFlag} "${worktreePath}"`);
-
-            res.json({ success: true, path: worktreePath });
+            const result = await createWorktree(repoPath, taskId, branchName);
+            res.json(result);
         } catch (e) {
             res.status(500).json({ error: e.message });
         }
@@ -93,4 +76,29 @@ function setupGitRoutes(app, getState) {
     });
 }
 
-module.exports = { setupGitRoutes };
+// Helper function exposed for other modules
+async function createWorktree(repoPath, taskId, branchName) {
+    if (!repoPath) throw new Error("Repository not selected");
+    const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
+
+    if (fs.existsSync(worktreePath)) {
+        return { success: true, path: worktreePath, message: 'Worktree already exists' };
+    }
+
+    try {
+        let createBranchFlag = '';
+        try {
+            // check if branch exists
+            await execAsync(`git rev-parse --verify ${branchName}`, { cwd: repoPath });
+        } catch (e) {
+            createBranchFlag = `-b ${branchName}`;
+        }
+        await execAsync(`git worktree add ${createBranchFlag} "${worktreePath}"`, { cwd: repoPath });
+        return { success: true, path: worktreePath };
+    } catch (e) {
+        console.error("Worktree creation failed:", e);
+        throw e;
+    }
+}
+
+module.exports = { setupGitRoutes, createWorktree };

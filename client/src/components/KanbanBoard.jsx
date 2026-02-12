@@ -4,6 +4,7 @@ import { useTasks } from '../context/TaskContext';
 import { useNavigate } from 'react-router-dom';
 import { RepoModal } from './RepoModal';
 import { CreateTaskModal } from './CreateTaskModal';
+import { TaskDetail } from './TaskDetail';
 import styles from './KanbanBoard.module.css';
 import { Plus, Github, Folder, Settings } from 'lucide-react';
 
@@ -16,10 +17,15 @@ const COLUMNS = {
 };
 
 export function KanbanBoard() {
-    const { tasks, moveTask, addTask, isConnected, config, setRepoPath } = useTasks();
+    const { tasks, moveTask, addTask, isConnected, config, setRepoPath, loading } = useTasks();
     const navigate = useNavigate();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [selectedTaskId, setSelectedTaskId] = useState(null);
+
+    if (loading) {
+        return <div className={styles.loading}>Loading...</div>;
+    }
 
     const onDragEnd = (result) => {
         if (!result.destination) return;
@@ -56,6 +62,13 @@ export function KanbanBoard() {
                 <CreateTaskModal
                     onClose={() => setIsCreateModalOpen(false)}
                     onCreate={handleCreateTask}
+                />
+            )}
+
+            {selectedTaskId && (
+                <TaskDetail
+                    taskId={selectedTaskId}
+                    onClose={() => setSelectedTaskId(null)}
                 />
             )}
 
@@ -99,7 +112,7 @@ export function KanbanBoard() {
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
                                                         className={styles.taskCard}
-                                                        onClick={() => navigate(`/task/${task.id}`)}
+                                                        onClick={() => setSelectedTaskId(task.id)}
                                                     >
                                                         <div className={styles.taskHeader}>
                                                             <span className={styles.taskTitle}>{task.title}</span>

@@ -6,6 +6,8 @@
     overflow: hidden;
     border-radius: 8px;
     border: 1px solid #334155;
+    min-width: 100px;
+    min-height: 100px;
 }
 
 .terminal {

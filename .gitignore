@@ -39,3 +39,4 @@ db.json
 # Temporary
 tmp/
 temp/
+node_modules

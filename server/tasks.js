@@ -1,7 +1,7 @@
 const { getDB } = require('./db');
 const { v4: uuidv4 } = require('uuid');
 
-function setupTaskRoutes(app, getState) {
+function setupTaskRoutes(app, getState, createWorktree) {
 
     // Middleware to ensure DB is ready or check path
     const checkDB = (req, res, next) => {
@@ -35,6 +35,19 @@ function setupTaskRoutes(app, getState) {
         };
         db.data.tasks.push(newTask);
         await db.write();
+
+        // Auto-create worktree
+        try {
+            if (createWorktree) {
+                const { repoPath } = getState();
+                await createWorktree(repoPath, newTask.id, newTask.branchName);
+                console.log(`Auto-created worktree for task ${newTask.id}`);
+            }
+        } catch (e) {
+            console.error(`Failed to auto-create worktree for task ${newTask.id}:`, e);
+            // Don't fail the request, just log it. User can retry via UI.
+        }
+
         res.json(newTask);
     });
 

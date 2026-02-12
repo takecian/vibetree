@@ -4,6 +4,18 @@
     flex-direction: column;
     background-color: var(--bg-primary);
     color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-primary);
 }
 
 .header {

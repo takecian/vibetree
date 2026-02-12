@@ -3,7 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const { setupTerminal } = require('./terminal');
-const { setupGitRoutes } = require('./git');
+const { setupGitRoutes, createWorktree } = require('./git');
 const { setupTaskRoutes } = require('./tasks');
 const { setupSystemRoutes } = require('./system');
 const { initDB } = require('./db');
@@ -64,7 +64,7 @@ if (STATE.repoPath) {
 
 setupTerminal(io, () => STATE);
 setupGitRoutes(app, () => STATE);
-setupTaskRoutes(app, () => STATE);
+setupTaskRoutes(app, () => STATE, createWorktree);
 setupSystemRoutes(app);
 
 // Health check

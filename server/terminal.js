@@ -30,13 +30,38 @@ function setupTerminal(io, getState) {
                 }
             }
 
-            const ptyProcess = pty.spawn(shell, [], {
-                name: 'xterm-color',
-                cols: cols || 80,
-                rows: rows || 30,
-                cwd: workingDir,
-                env: process.env
-            });
+            // Fallback if workingDir doesn't exist
+            if (!fs.existsSync(workingDir)) {
+                console.warn(`Working directory ${workingDir} does not exist. Falling back to home directory.`);
+                workingDir = os.homedir();
+            }
+
+            console.log(`[Terminal] Spawning ${shell} in ${workingDir}`);
+            console.log(`[Terminal] Cols: ${cols}, Rows: ${rows}`);
+
+            let ptyProcess;
+            try {
+                // Verify directory exists specifically before spawn
+                try {
+                    fs.accessSync(workingDir, fs.constants.R_OK | fs.constants.X_OK);
+                } catch (err) {
+                    console.error(`[Terminal] Directory not accessible: ${workingDir}`, err);
+                    socket.emit('terminal:error', `Directory not accessible: ${workingDir}`);
+                    return;
+                }
+
+                ptyProcess = pty.spawn(shell === 'zsh' ? '/bin/zsh' : shell, [], {
+                    name: 'xterm-color',
+                    cols: cols || 80,
+                    rows: rows || 30,
+                    cwd: workingDir,
+                    env: process.env
+                });
+            } catch (spawnError) {
+                console.error('[Terminal] Spawn failed:', spawnError);
+                socket.emit('terminal:error', 'Failed to spawn terminal process');
+                return;
+            }
 
             sessions[termId] = ptyProcess;
 

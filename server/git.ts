@@ -41,10 +41,10 @@ function setupGitRoutes(app: Application, getState: () => AppConfig): void {
 
     app.post('/api/git/worktree', async (req: Request, res: Response) => {
         const { branchName, taskId } = req.body;
-        const { repoPath } = getState();
+        const { repoPath, copyFiles } = getState();
 
         try {
-            const result = await createWorktree(repoPath, taskId, branchName);
+            const result = await createWorktree(repoPath, taskId, branchName, copyFiles);
             res.json(result);
         } catch (e: any) {
             res.status(500).json({ error: e.message });
@@ -84,7 +84,12 @@ function setupGitRoutes(app: Application, getState: () => AppConfig): void {
 }
 
 // Helper function exposed for other modules
-async function createWorktree(repoPath: string, taskId: string, branchName: string): Promise<{ success: boolean; path: string; message?: string }> {
+async function createWorktree(
+    repoPath: string,
+    taskId: string,
+    branchName: string,
+    copyFiles?: string
+): Promise<{ success: boolean; path: string; message?: string }> {
     if (!repoPath) throw new Error("Repository not selected");
     const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
 
@@ -95,12 +100,36 @@ async function createWorktree(repoPath: string, taskId: string, branchName: stri
     try {
         let createBranchFlag = '';
         try {
-            // check if branch exists
             await execAsync(`git rev-parse --verify ${branchName}`, { cwd: repoPath });
         } catch (e) {
             createBranchFlag = `-b ${branchName}`;
         }
         await execAsync(`git worktree add ${createBranchFlag} "${worktreePath}"`, { cwd: repoPath });
+
+        // Copy configured files (e.g. .env) into worktree
+        if (copyFiles && typeof copyFiles === 'string') {
+            const entries = copyFiles.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+            for (const entry of entries) {
+                const srcPath = path.isAbsolute(entry) ? entry : path.join(repoPath, entry);
+                const destPath = path.join(worktreePath, path.basename(entry));
+                if (!fs.existsSync(srcPath)) {
+                    console.warn(`[Worktree] Copy skipped (not found): ${srcPath}`);
+                    continue;
+                }
+                // Only copy files, not directories
+                if (!fs.statSync(srcPath).isFile()) {
+                    console.warn(`[Worktree] Copy skipped (not a file): ${srcPath}`);
+                    continue;
+                }
+                try {
+                    fs.copyFileSync(srcPath, destPath);
+                    console.log(`[Worktree] Copied ${path.basename(entry)} to worktree`);
+                } catch (copyErr: any) {
+                    console.warn(`[Worktree] Failed to copy ${entry}:`, copyErr.message);
+                }
+            }
+        }
+
         return { success: true, path: worktreePath };
     } catch (e: any) {
         console.error("Worktree creation failed:", e);

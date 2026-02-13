@@ -12,6 +12,8 @@ export interface Task {
 export interface AppConfig {
     repoPath: string;
     aiTool: string;
+    /** Newline-separated file paths (relative to repo or absolute) to copy into each worktree */
+    copyFiles?: string;
 }
 
 export interface GitStatus {

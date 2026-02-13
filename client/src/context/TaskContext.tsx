@@ -8,7 +8,7 @@ interface TaskContextType {
     config: AppConfig | null;
     loading: boolean;
     isConnected: boolean;
-    setRepoPath: (path: string, aiTool: string) => Promise<void>;
+    setRepoPath: (path: string, aiTool: string, copyFiles?: string) => Promise<void>;
     moveTask: (taskId: string, newStatus: Task['status']) => Promise<void>;
     addTask: (title: string, description: string) => Promise<Task>;
     deleteTask: (taskId: string) => Promise<void>;
@@ -61,10 +61,11 @@ export function TaskProvider({ children }: TaskProviderProps) {
         refreshConfig();
     }, []);
 
-    const setRepoPath = async (path: string, aiTool: string) => {
+    const setRepoPath = async (path: string, aiTool: string, copyFiles?: string) => {
         const newHelper: AppConfig = {
             repoPath: path,
-            aiTool: aiTool || config?.aiTool || 'claude'
+            aiTool: aiTool || config?.aiTool || 'claude',
+            copyFiles: copyFiles !== undefined ? copyFiles : config?.copyFiles ?? ''
         };
 
         const updatedConfig: AppConfig = await updateConfigApi(newHelper);

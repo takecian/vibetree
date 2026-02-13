@@ -50,8 +50,8 @@ export function KanbanBoard() {
     // Extract repo name from path
     const repoName: string = config?.repoPath ? config.repoPath.split('/').pop() || 'No Repository' : 'No Repository';
 
-    const handleSaveConfig = async (path: string, aiTool: string) => {
-        await setRepoPath(path, aiTool);
+    const handleSaveConfig = async (path: string, aiTool: string, copyFiles: string) => {
+        await setRepoPath(path, aiTool, copyFiles);
         setShowSettings(false);
     };
 

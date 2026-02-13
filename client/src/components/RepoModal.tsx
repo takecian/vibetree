@@ -4,7 +4,7 @@ import { FolderOpen } from 'lucide-react';
 import { AppConfig, AiToolsCheckResult } from '../types'; // Import AppConfig and AiToolsCheckResult interfaces
 
 interface RepoModalProps {
-    onSave: (path: string, aiTool: string) => void;
+    onSave: (path: string, aiTool: string, copyFiles: string) => void;
     initialConfig: AppConfig | null;
     onClose?: () => void;
 }
@@ -12,6 +12,7 @@ interface RepoModalProps {
 export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
+    const [copyFiles, setCopyFiles] = useState<string>('');
     const [availableTools, setAvailableTools] = useState<AiToolsCheckResult>({});
     const [loading, setLoading] = useState<boolean>(false);
     const [checkingTools, setCheckingTools] = useState<boolean>(true);
@@ -19,6 +20,7 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
     useEffect(() => {
         if (initialConfig?.repoPath) setPath(initialConfig.repoPath);
         if (initialConfig?.aiTool) setAiTool(initialConfig.aiTool);
+        if (initialConfig?.copyFiles !== undefined) setCopyFiles(initialConfig.copyFiles ?? '');
 
         async function check() {
             try {
@@ -37,7 +39,7 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         if (path.trim()) {
-            onSave(path.trim(), aiTool);
+            onSave(path.trim(), aiTool, copyFiles.trim());
         }
     };
 
@@ -122,6 +124,18 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
                             })}
                         </div>
                         {checkingTools && <span className="text-xs text-slate-400 mt-2 block">Checking tools...</span>}
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block mb-2 text-sm font-medium text-slate-50">Files to copy into worktrees</label>
+                        <textarea
+                            value={copyFiles}
+                            onChange={(e) => setCopyFiles(e.target.value)}
+                            placeholder={'.env\n.env.local'}
+                            rows={3}
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">One path per line (relative to repo root or absolute). These files are copied into each new worktree (e.g. .env).</p>
                     </div>
 
                     <div className="flex gap-3 mt-6">

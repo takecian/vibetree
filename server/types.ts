@@ -17,7 +17,8 @@ export interface DBData {
 export interface AppConfig {
     repoPath: string;
     aiTool: string;
-    // Add any other config properties
+    /** Newline-separated file paths (relative to repo or absolute) to copy into each worktree */
+    copyFiles?: string;
 }
 
 // Extend process.env for custom environment variables

@@ -1,0 +1,28 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background for contrast in dark/light mode -->
+  <rect width="32" height="32" rx="6" fill="#1A1A1A" />
+  
+  <!-- Trunk -->
+  <path d="M16 28V20" stroke="url(#paint0_linear)" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Main Branches -->
+  <path d="M16 20L10 14M16 20L22 14M16 20V12" stroke="url(#paint0_linear)" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Sub Branches & Nodes -->
+  <circle cx="10" cy="14" r="2" fill="#6366F1"/>
+  <circle cx="22" cy="14" r="2" fill="#14B8A6"/>
+  <circle cx="16" cy="12" r="2" fill="#8B5CF6"/>
+  
+  <path d="M10 14L7 11M22 14L25 11M16 12L16 8" stroke="url(#paint0_linear)" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <circle cx="7" cy="11" r="1.5" fill="#4F46E5"/>
+  <circle cx="25" cy="11" r="1.5" fill="#0D9488"/>
+  <circle cx="16" cy="8" r="1.5" fill="#7C3AED"/>
+
+  <defs>
+    <linearGradient id="paint0_linear" x1="16" y1="8" x2="16" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+</svg>

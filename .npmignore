@@ -4,8 +4,6 @@ client/public
 client/vite.config.ts
 client/postcss.config.js
 client/tailwind.config.ts
-server/*.ts
-server/tsconfig.json
 shared/*.ts
 docs
 tests

@@ -1,4 +1,4 @@
-import pty from 'node-pty'; // Reverted to original 'node-pty'
+import * as pty from 'node-pty';
 import os from 'os';
 import path from 'path';
 import fs from 'fs';

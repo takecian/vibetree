@@ -8,13 +8,15 @@ import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
 import { setupTerminal } from './terminal';
-import { setupGitRoutes, createWorktree } from './git';
-import { setupTaskRoutes, getTaskById } from './tasks';
-import { setupSystemRoutes } from './system';
+import { createWorktree } from './git';
+import { getTaskById } from './tasks';
 import { initDB } from './db';
 import fs from 'fs';
 import { AppConfig } from './types';
 import { loadConfig, saveConfig } from './config';
+import * as trpcExpress from '@trpc/server/adapters/express';
+import { appRouter } from './router';
+import { Context } from './trpc';
 
 // Extend the Express Request type to include appState
 declare global {
@@ -35,47 +37,36 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
+// Setup helpers and routes
+const { ensureTerminalForTask, runAiForTask } = setupTerminal(io, () => STATE, getTaskById);
+
 // Middleware to inject current state
 app.use((req: Request, res: Response, next: NextFunction) => {
     req.appState = STATE;
     next();
 });
 
-// Config Routes
-app.get('/api/config', (req: Request, res: Response) => {
-    res.json(STATE);
-});
-
-app.post('/api/config', async (req: Request, res: Response) => {
-    const { repoPath, aiTool, copyFiles } = req.body;
-
-    if (repoPath !== undefined) {
-        if (repoPath && !fs.existsSync(repoPath)) {
-            return res.status(400).json({ error: 'Path does not exist' });
-        }
-        STATE.repoPath = repoPath || '';
-        if (repoPath) await initDB(repoPath);
-    }
-
-    if (aiTool !== undefined) {
-        STATE.aiTool = aiTool;
-    }
-
-    if (copyFiles !== undefined) {
-        STATE.copyFiles = typeof copyFiles === 'string' ? copyFiles : '';
-    }
-
-    await saveConfig(STATE);
-    res.json(STATE);
-});
+// tRPC Middleware
+app.use(
+    '/api/trpc',
+    trpcExpress.createExpressMiddleware({
+        router: appRouter,
+        createContext: (): Context => ({
+            getState: () => STATE,
+            createWorktree: (repoPath, taskId, branchName) => createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
+            ensureTerminalForTask,
+            runAiForTask,
+        }),
+    })
+);
 
 // Initialize modules
 if (STATE.repoPath) {
     initDB(STATE.repoPath).catch(err => console.error("Failed to init DB:", err));
 }
 
-// Setup Routes
-const { ensureTerminalForTask, runAiForTask } = setupTerminal(io, () => STATE, getTaskById);
+// Setup legacy REST Routes (Disabled - using tRPC instead)
+/*
 setupGitRoutes(app, () => STATE);
 setupTaskRoutes(app, () => STATE, (repoPath, taskId, branchName) =>
     createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
@@ -83,6 +74,7 @@ setupTaskRoutes(app, () => STATE, (repoPath, taskId, branchName) =>
     runAiForTask
 );
 setupSystemRoutes(app);
+*/
 
 // Serve static files from the client/dist directory
 const clientPath = path.join(__dirname, '..', '..', 'client', 'dist');

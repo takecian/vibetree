@@ -1,21 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchTasks, updateTask as updateTaskApi, createTask as createTaskApi, deleteTask as deleteTaskApi, fetchConfig, updateConfig as updateConfigApi } from '../api';
-import { Task, AppConfig } from '../types'; // Import Task and AppConfig interfaces
+import React, { createContext, useContext, ReactNode } from 'react';
+import { trpc } from '../trpc';
+import { Task, AppConfig } from '../types';
 
-// Define the shape of the context value
 interface TaskContextType {
     tasks: Task[];
     config: AppConfig | null;
     loading: boolean;
     isConnected: boolean;
     setRepoPath: (path: string, aiTool: string, copyFiles?: string) => Promise<void>;
-    moveTask: (taskId: string, newStatus: Task['status']) => Promise<void>;
     addTask: (title: string, description: string) => Promise<Task>;
     deleteTask: (taskId: string) => Promise<void>;
-    refreshTasks: () => Promise<void>;
+    refreshTasks: () => void;
 }
 
-// Create context with a default undefined value, asserting it will be provided
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 interface TaskProviderProps {
@@ -23,85 +20,59 @@ interface TaskProviderProps {
 }
 
 export function TaskProvider({ children }: TaskProviderProps) {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [config, setConfig] = useState<AppConfig | null>(null);
-    const [isConnected, setIsConnected] = useState<boolean>(false);
+    const utils = trpc.useUtils();
 
-    const refreshConfig = async () => {
-        try {
-            const data: AppConfig = await fetchConfig();
-            setConfig(data);
-            if (data.repoPath) {
-                setIsConnected(true);
-                await refreshTasks();
-            } else {
-                setIsConnected(false);
-                setLoading(false);
-            }
-        } catch (e) {
-            console.error("Failed to load config", e);
-            setLoading(false);
+    // Queries
+    const { data: config = null, isLoading: configLoading } = trpc.getConfig.useQuery();
+    const { data: tasks = [], isLoading: tasksLoading, refetch: refreshTasks } = trpc.getTasks.useQuery(undefined, {
+        enabled: !!config?.repoPath,
+    });
+
+    // Mutations
+    const updateConfigMutation = trpc.updateConfig.useMutation({
+        onSuccess: (newConfig) => {
+            utils.getConfig.setData(undefined, newConfig);
+            utils.getTasks.invalidate();
         }
-    };
+    });
 
-    const refreshTasks = async () => {
-        setLoading(true);
-        try {
-            const data: Task[] = await fetchTasks();
-            setTasks(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+    const createTaskMutation = trpc.createTask.useMutation({
+        onSuccess: () => {
+            utils.getTasks.invalidate();
         }
-    };
+    });
 
-    useEffect(() => {
-        refreshConfig();
-    }, []);
+    const deleteTaskMutation = trpc.deleteTask.useMutation({
+        onSuccess: () => {
+            utils.getTasks.invalidate();
+        }
+    });
 
     const setRepoPath = async (path: string, aiTool: string, copyFiles?: string) => {
-        const newHelper: AppConfig = {
+        await updateConfigMutation.mutateAsync({
             repoPath: path,
             aiTool: aiTool || config?.aiTool || 'claude',
             copyFiles: copyFiles !== undefined ? copyFiles : config?.copyFiles ?? ''
-        };
-
-        const updatedConfig: AppConfig = await updateConfigApi(newHelper);
-        setConfig(updatedConfig);
-        if (updatedConfig.repoPath) {
-            setIsConnected(true);
-            await refreshTasks();
-        }
-    };
-
-    const moveTask = async (taskId: string, newStatus: Task['status']) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-        await updateTaskApi(taskId, { status: newStatus });
+        });
     };
 
     const addTask = async (title: string, description: string): Promise<Task> => {
-        const newTask: Task = await createTaskApi(title, description);
-        setTasks(prev => [...prev, newTask]);
-        return newTask;
+        return await createTaskMutation.mutateAsync({ title, description });
     };
 
     const deleteTask = async (taskId: string) => {
-        await deleteTaskApi(taskId);
-        setTasks(prev => prev.filter(t => t.id !== taskId));
+        await deleteTaskMutation.mutateAsync(taskId);
     };
 
     const contextValue: TaskContextType = {
         tasks,
         config,
-        loading,
-        isConnected,
+        loading: configLoading || tasksLoading,
+        isConnected: !!config?.repoPath,
         setRepoPath,
-        moveTask,
         addTask,
         deleteTask,
-        refreshTasks
+        refreshTasks: () => { refreshTasks(); }
     };
 
     return (

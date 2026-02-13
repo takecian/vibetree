@@ -2,7 +2,7 @@
 
 ## Overview
 
-Vibetree is a local AI-enhanced task manager designed for developers to seamlessly manage tasks with Git integration and AI assistant support. The application follows a classic three-tier architecture with a CLI entry point, an Express.js backend server, and a React-based frontend client.
+Vibetree is a local AI-enhanced task manager designed for developers to seamlessly manage tasks with Git integration and AI assistant support. The application follows a modern architecture using tRPC for end-to-end type safety between the TypeScript backend and frontend.
 
 ## Technology Stack
 
@@ -10,18 +10,22 @@ Vibetree is a local AI-enhanced task manager designed for developers to seamless
 - **React 18.2**: UI library for building component-based interfaces
 - **TypeScript**: Type-safe development
 - **Vite**: Fast build tool and development server
+- **tRPC Client**: Type-safe API client
+- **TanStack Query**: Async state management and data fetching
 - **React Router DOM**: Client-side routing
-- **Socket.IO Client**: Real-time bidirectional communication
+- **Socket.IO Client**: Real-time bidirectional communication (terminals)
 - **xterm.js**: Terminal emulator in the browser
 - **Lucide React**: Icon library
 
 ### Backend (Server)
 - **Node.js**: JavaScript runtime
 - **Express 5**: Web application framework
+- **tRPC Server**: Type-safe API endpoints
+- **Zod**: Runtime schema validation
 - **TypeScript**: Type-safe development (compiled to JavaScript)
 - **Socket.IO**: Real-time communication with clients
 - **LowDB 7**: Lightweight JSON-based database
-- **node-pty**: Pseudo-terminal handling for embedded terminals
+- **node-pty**: Pseudo-terminal handling
 - **CORS**: Cross-origin resource sharing
 
 ### Build & Development Tools
@@ -40,15 +44,16 @@ vibetree/
 │   ├── src/
 │   │   ├── components/    # React components
 │   │   │   ├── CreateTaskModal.tsx
-│   │   │   ├── KanbanBoard.tsx   # Main Task Board (Single List View)
+│   │   │   ├── KanbanBoard.tsx   # Main Task View
 │   │   │   ├── RepoModal.tsx
 │   │   │   ├── TaskDetail.tsx
 │   │   │   └── TerminalView.tsx
 │   │   ├── context/       # React context providers
-│   │   │   └── TaskContext.tsx
+│   │   │   ├── TaskContext.tsx
+│   │   │   └── TerminalContext.tsx
 │   │   ├── assets/        # Images and other assets
-│   │   ├── api.ts         # API client functions
-│   │   ├── types.ts       # TypeScript type definitions
+│   │   ├── trpc.ts        # tRPC client instance
+│   │   ├── types.ts       # Shared type definitions
 │   │   ├── App.tsx        # Main application component
 │   │   └── main.tsx       # Application entry point
 │   ├── index.html         # HTML template
@@ -57,12 +62,13 @@ vibetree/
 │   └── vite.config.ts     # Vite configuration
 ├── server/                 # Express.js backend
 │   ├── db.ts              # Database initialization and access
-│   ├── git.ts             # Git operations (worktree, status, diff, commit)
+│   ├── git.ts             # Git helper functions (worktree, status, diff)
 │   ├── index.ts           # Server entry point and configuration
-│   ├── system.ts          # System operations (directory picker, AI tools)
-│   ├── tasks.ts           # Task management routes
+│   ├── router.ts          # tRPC App Router and Procedures
+│   ├── tasks.ts           # Task helper functions
 │   ├── terminal.ts        # Terminal emulator management
-│   ├── types.ts           # TypeScript type definitions
+│   ├── trpc.ts            # tRPC initialization and Context
+│   ├── types.ts           # Shared type definitions
 │   ├── package.json       # Server dependencies
 │   └── tsconfig.json      # TypeScript configuration (compiles to dist/)
 ├── docs/                   # Documentation
@@ -70,7 +76,6 @@ vibetree/
 ├── package.json            # Root package.json (workspace configuration)
 |── vibetree_config.json    # Persistent configuration (git ignored)
 └── README.md              # Project README
-
 ```
 
 ## Architecture Layers
@@ -88,13 +93,9 @@ vibetree/
 - Launch the server process
 - Optionally open the browser
 
-**Command-line Options**:
-- `--repo, -r`: Specify target repository path
-- `--ai, -a`: Choose AI tool (claude, codex, gemini)
-
 ### 2. Server Layer (`server/`)
 
-**Purpose**: Backend API server handling business logic, data persistence, Git operations, and terminal management.
+**Purpose**: Backend server handling business logic, data persistence, and Git operations via tRPC.
 
 **Entry Point**: `server/index.ts`
 
@@ -102,268 +103,108 @@ vibetree/
 
 #### `index.ts` - Server Configuration
 - Express application setup
-- HTTP server creation
+- tRPC middleware configuration (`/api/trpc`)
 - Socket.IO initialization
-- CORS configuration
-- Route registration
-- State management (repository path, AI tool)
+- State management injection
+
+#### `router.ts` - tRPC Router
+- Defines the `AppRouter`
+- Implements procedures for:
+  - **Config**: `getConfig`, `updateConfig`
+  - **Tasks**: `getTasks`, `createTask`, `updateTask`, `deleteTask`
+  - **Git**: `getGitStatus`, `getGitDiff`, `createCommit`
+  - **System**: `pickFolder`, `getAiTools`
+
+#### `trpc.ts` - tRPC Setup
+- Initializes tRPC
+- Defines the `Context` interface (State + Helpers)
 
 #### `db.ts` - Data Persistence
 - LowDB initialization
 - JSON-based database operations
-- Task storage and retrieval
-- Database schema management
 
-#### `tasks.ts` - Task Management
-- CRUD operations for tasks
-- Automated environment initialization (Git worktree creation)
-- RESTful API endpoints:
-  - `GET /api/tasks` - List all tasks
-  - `POST /api/tasks` - Create a new task
-  - `GET /api/tasks/:id` - Get task by ID
-  - `PUT /api/tasks/:id` - Update task
-  - `DELETE /api/tasks/:id` - Delete task
-
-#### `git.ts` - Git Integration
-- Repository management
-- Worktree creation and deletion
-- Git status and diff operations
-- Commit creation
-- API endpoints:
-  - `POST /api/git/worktree` - Create worktree for task
-  - `GET /api/git/status` - Get git status for task
-  - `GET /api/git/diff` - Get git diff for task
-  - `POST /api/git/commit` - Create commit for task
-  - `DELETE /api/git/worktree/:taskId` - Delete worktree
-
-#### `system.ts` - System Operations
-- Native directory picker
-- AI tool detection (PATH and binary locations)
-- System configuration
-- API endpoints:
-  - `GET /api/system/pick-folder` - Open directory picker
-  - `GET /api/system/ai-tools` - Detect available AI tools
+#### `tasks.ts` & `git.ts` - Helpers
+- Pure helper functions for task and git logic
+- Used by `router.ts` procedures
 
 #### `terminal.ts` - Terminal Emulation
-- Pseudo-terminal (PTY) management
-- Socket.IO-based terminal sessions
-- Process spawning and management
-- Input/output streaming
-
-**Server Configuration**:
-- Default port: 3000
-- Environment variables:
-  - `REPO_PATH`: Target repository path
-  - `AI_TOOL`: Selected AI assistant
-  - `VIBE_FLOW_PORT`: Server port
+- Pseudo-terminal (PTY) management via `node-pty`
+- Socket.IO handlers for terminal events
 
 ### 3. Client Layer (`client/`)
 
-**Purpose**: React-based frontend providing the user interface for task management and Git operations.
+**Purpose**: React-based frontend providing the user interface using tRPC hooks.
 
 **Entry Point**: `client/src/main.tsx`
 
 **Core Components**:
 
 #### `App.tsx` - Application Root
-- React Router setup
-- Route definitions
-- TaskProvider wrapper
+- Sets up `trpc.Provider` and `QueryClientProvider`
+- Configures tRPC client with links (HTTP batching)
 
-#### `KanbanBoard.tsx` - Main Task View
-- Single-list task view
-- Task creation modal trigger
-- Settings modal for repository configuration
-- Real-time task updates
+#### `trpc.ts` - tRPC Client
+- Creates the typed tRPC hooks (`createTRPCReact`)
+- Imports `AppRouter` type from server (no code import)
 
-#### `TaskDetail.tsx` - Task Detail View
-- Individual task information
-- Worktree management
-- Embedded terminal
-- Git operations (status, diff, commit)
+#### `TaskContext.tsx`
+- Refactored to use `trpc.useQuery` and `trpc.useMutation`
+- Manages optimistic updates and cache invalidation
 
-#### `TerminalView.tsx` - Terminal Emulator
-- xterm.js integration
-- Socket.IO communication for terminal I/O
-- Fit addon for responsive sizing
-
-#### `CreateTaskModal.tsx` - Task Creation
-- Task title and description input
-- Task creation form
-
-#### `RepoModal.tsx` - Repository Settings
-- Repository path selection
-- AI tool selection
-
-#### `TaskContext.tsx` - Global State Management
-- React Context for task state
-- API integration
-- Task CRUD operations
-- Configuration management
-
-#### `api.ts` - API Client
-- HTTP client functions
-- RESTful API calls to server
-- Error handling
+#### Components (`KanbanBoard`, `TaskDetail`, etc.)
+- specialized UI components
+- `TaskDetail` fetches Git Diff directly via `trpc.getGitDiff.useQuery`
+- `RepoModal` uses `trpc.pickFolder.useMutation`
 
 ## Data Flow
 
-### Task Management Flow
-1. **User Action**: User interacts with UI (e.g., creates task, selects task)
-2. **Context Update**: TaskContext handles the action
-3. **API Call**: Context calls API function in `api.ts`
-4. **HTTP Request**: Request sent to Express server
-5. **Server Processing**: Server module (e.g., `tasks.ts`) processes request
-6. **Database Operation**: Data persisted to LowDB
-7. **Automated Initialization**: Server (optionally) creates Git worktree and initializes terminal
-8. **Response**: Server sends response back to client
-9. **State Update**: Context updates local state
-10. **UI Render**: React re-renders affected components
+### tRPC Operation Flow
+1. **User Action**: User interacts with UI (e.g., creates task)
+2. **Hook Call**: Component calls `trpc.createTask.useMutation`
+3. **Type Check**: TypeScript validates input arguments against Zod schema
+4. **Network Request**: JSON payload sent to `/api/trpc/createTask`
+5. **Procedure Execution**: Server `router.ts` executes the procedure
+6. **Helper Execution**: Procedure calls helpers in `tasks.ts`/`git.ts`
+7. **Side Effects**: Worktrees created, DB updated
+8. **Response**: Type-safe response returned to client
+9. **Cache Update**: TanStack Query updates client cache, triggering re-renders
 
 ### Real-time Terminal Flow
-1. **Terminal Component Mounted**: TerminalView component initializes
-2. **Socket Connection**: Socket.IO client connects to server
-3. **PTY Creation**: Server creates pseudo-terminal process
-4. **User Input**: User types in terminal
-5. **Socket Emit**: Client sends input to server via Socket.IO
-6. **PTY Write**: Server writes input to PTY
-7. **PTY Output**: PTY process generates output
-8. **Socket Emit**: Server sends output to client via Socket.IO
-9. **Terminal Display**: Client displays output in xterm.js
+(Unchanged from previous architecture - uses pure Socket.IO)
 
-### Git Operations Flow
-1. **User Action**: User clicks "View Diff" or "Commit"
-2. **API Call**: Client calls Git API endpoint
-3. **Git Command**: Server executes Git command via `git.ts`
-4. **File System Operation**: Git modifies file system (e.g., creates worktree)
-5. **Response**: Server returns result
-6. **UI Update**: Client displays result or updates state
+## API Procedures (tRPC)
 
-## API Endpoints
-
-### Configuration
-- `GET /api/config` - Get current configuration
+### Config
+- `getConfig`: `() => AppConfig`
+- `updateConfig`: `(repoPath?, aiTool?, copyFiles?) => AppConfig`
 
 ### Tasks
-- `GET /api/tasks` - List all tasks
-- `POST /api/tasks` - Create new task
-- `GET /api/tasks/:id` - Get task by ID
-- `PUT /api/tasks/:id` - Update task
-- `DELETE /api/tasks/:id` - Delete task
+- `getTasks`: `() => Task[]`
+- `createTask`: `(title, description?) => Task`
+- `updateTask`: `(id, updates) => Task`
+- `deleteTask`: `(id) => { success: boolean }`
 
 ### Git
-- `POST /api/git/worktree` - Create worktree for task
-- `GET /api/git/status` - Get git status for task
-- `GET /api/git/diff` - Get git diff for task
-- `POST /api/git/commit` - Create commit for task
-- `DELETE /api/git/worktree/:taskId` - Delete worktree
+- `getGitStatus`: `(taskId?) => { branch, status }`
+- `getGitDiff`: `(taskId?) => { diff }`
+- `createCommit`: `(taskId?, message) => { success: boolean }`
 
 ### System
-- `GET /api/system/pick-folder` - Open native directory picker
-- `GET /api/system/ai-tools` - Detect available AI tools
-
-### Socket.IO Events
-- `terminal:create` - Create new terminal session
-- `terminal:input` - Send input to terminal
-- `terminal:resize` - Resize terminal
-- `terminal:output` - Receive output from terminal
-- `terminal:exit` - Terminal session ended
-
-## Build and Deployment
-
-### Development
-
-```bash
-# Install dependencies for all workspaces
-npm install
-
-# Run development servers (client + server)
-npm run dev
-```
-
-This runs:
-- **Client**: `vite` dev server on `http://localhost:5173`
-- **Server**: `tsc --watch` (TypeScript compiler) + `node --watch dist/index.js`
-
-### Production Build
-
-```bash
-# Build all workspaces
-npm run build
-```
-
-This runs:
-1. **Client Build**: `vite build` - Outputs to `client/dist/`
-2. **Server Build**: `tsc` - Compiles TypeScript to `server/dist/`
-
-### Running Production Build
-
-```bash
-# Start the application
-npm start
-```
-
-This executes `bin/vibetree.js` which:
-1. Parses CLI arguments
-2. Loads configuration
-3. Launches the server from `server/dist/index.js`
+- `pickFolder`: `() => { path?: string, canceled?: boolean }`
+- `getAiTools`: `() => Record<string, boolean>`
 
 ## Key Design Decisions
 
-### TypeScript Throughout
-Both client and server are written in TypeScript for:
-- Type safety
-- Better IDE support
-- Reduced runtime errors
-- Shared type definitions
+### tRPC for API
+Replaced REST with tRPC to achieve:
+- **End-to-End Type Safety**: Changes in backend types immediately flag errors in frontend code.
+- **Developer Experience**: Autocomplete for API methods and inputs/outputs.
+- **Reduced Boilerplate**: No need to manually type `fetch` responses or maintain separate API client files.
 
-### Monorepo with Workspaces
-npm workspaces enable:
-- Shared dependencies
-- Unified build process
-- Simplified development workflow
-
-### LowDB for Persistence
-JSON-based database chosen for:
-- Simplicity (no external database required)
-- Local-first approach
-- Easy debugging (human-readable JSON)
-- Sufficient for single-user application
+### TanStack Query (React Query)
+Used via tRPC for:
+- **Caching**: Automatic caching and background refetching.
+- **State Management**: Replaces complex global state for server data.
 
 ### Socket.IO for Terminals
-WebSocket-based communication for:
-- Real-time bidirectional communication
-- Efficient terminal I/O streaming
-- Automatic reconnection
-
-### React Context for State
-Context API chosen over Redux/other libraries for:
-- Sufficient for app complexity
-- No additional dependencies
-- Simpler learning curve
-- Direct integration with React
-
-### Git Worktrees
-Using Git worktrees instead of branches for:
-- Parallel task development
-- No context switching
-- Isolated working directories
-- Preserves main branch state
-
-## Security Considerations
-
-- **Local-only**: Application runs locally, no remote data transmission
-- **File System Access**: Server has file system access limited to specified repository
-- **Terminal Access**: Terminal runs with user's permissions
-- **AI Tool Integration**: Uses CLI tools, no API keys stored in application
-- **CORS**: Configured for local development (origin: '*' should be restricted in production)
-
-## Future Extensibility
-
-The architecture supports future enhancements:
-- **Remote Repository Support**: Add Git remote operations
-- **Multiple Users**: Add authentication and user management
-- **Cloud Sync**: Add cloud database option
-- **Plugin System**: Support for custom AI tools
-- **Webhook Integration**: CI/CD integration
-- **Enhanced Git Features**: Merge, rebase, conflict resolution
+Kept Socket.IO for terminals because tRPC is request/response based, whereas terminals require streaming, bidirectional, persistent connections.

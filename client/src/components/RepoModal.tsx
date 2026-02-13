@@ -1,7 +1,7 @@
-import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { pickFolder, checkAITools } from '../api'; // updateConfig is not directly used here
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { trpc } from '../trpc';
 import { FolderOpen } from 'lucide-react';
-import { AppConfig, AiToolsCheckResult } from '../types'; // Import AppConfig and AiToolsCheckResult interfaces
+import { AppConfig } from '../types';
 
 interface RepoModalProps {
     onSave: (path: string, aiTool: string, copyFiles: string) => void;
@@ -13,27 +13,15 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
     const [copyFiles, setCopyFiles] = useState<string>('');
-    const [availableTools, setAvailableTools] = useState<AiToolsCheckResult>({});
-    const [loading, setLoading] = useState<boolean>(false);
-    const [checkingTools, setCheckingTools] = useState<boolean>(true);
+
+    // tRPC Hooks
+    const { data: availableTools = {}, isLoading: checkingTools } = trpc.getAiTools.useQuery();
+    const pickFolderMutation = trpc.pickFolder.useMutation();
 
     useEffect(() => {
         if (initialConfig?.repoPath) setPath(initialConfig.repoPath);
         if (initialConfig?.aiTool) setAiTool(initialConfig.aiTool);
         if (initialConfig?.copyFiles !== undefined) setCopyFiles(initialConfig.copyFiles ?? '');
-
-        async function check() {
-            try {
-                const tools: AiToolsCheckResult = await checkAITools();
-                console.log('Available AI Tools:', tools);
-                setAvailableTools(tools);
-            } catch (e) {
-                console.error('Failed to check AI tools', e);
-            } finally {
-                setCheckingTools(false);
-            }
-        }
-        check();
     }, [initialConfig]);
 
     const handleSubmit = (e: FormEvent) => {
@@ -44,17 +32,14 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
     };
 
     const handleBrowse = async () => {
-        setLoading(true);
         try {
-            const result = await pickFolder();
-            if (result.path) {
+            const result = await pickFolderMutation.mutateAsync();
+            if ('path' in result && result.path) {
                 setPath(result.path);
             }
         } catch (e) {
             console.error(e);
             alert('Failed to open folder picker. Please paste the path manually.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -94,7 +79,13 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
                                 className="flex-1 p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                 autoFocus
                             />
-                            <button type="button" onClick={handleBrowse} className="px-4 bg-slate-600 text-slate-50 border border-slate-600 rounded-md cursor-pointer flex items-center justify-center transition-all hover:bg-slate-900 hover:border-blue-500" title="Browse Folder">
+                            <button
+                                type="button"
+                                onClick={handleBrowse}
+                                className="px-4 bg-slate-600 text-slate-50 border border-slate-600 rounded-md cursor-pointer flex items-center justify-center transition-all hover:bg-slate-900 hover:border-blue-500 disabled:opacity-50"
+                                title="Browse Folder"
+                                disabled={pickFolderMutation.isPending}
+                            >
                                 <FolderOpen size={20} />
                             </button>
                         </div>
@@ -104,7 +95,7 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
                         <label className="block mb-2 text-sm font-medium text-slate-50">AI Assistant</label>
                         <div className="grid grid-cols-3 gap-3">
                             {['claude', 'codex', 'gemini'].map(tool => {
-                                const isAvailable = availableTools[tool as keyof AiToolsCheckResult];
+                                const isAvailable = !!availableTools[tool as keyof typeof availableTools];
                                 const isSelected = aiTool === tool;
                                 return (
                                     <label key={tool} className={getToolOptionClasses(tool, isSelected, isAvailable)}>
@@ -144,7 +135,7 @@ export function RepoModal({ onSave, initialConfig, onClose }: RepoModalProps) {
                                 Cancel
                             </button>
                         )}
-                        <button type="submit" className="w-full p-3 bg-blue-500 text-white border-0 rounded-md text-base font-medium cursor-pointer transition-opacity hover:bg-blue-600 disabled:opacity-70 disabled:cursor-not-allowed" disabled={loading || !path}>
+                        <button type="submit" className="w-full p-3 bg-blue-500 text-white border-0 rounded-md text-base font-medium cursor-pointer transition-opacity hover:bg-blue-600 disabled:opacity-70 disabled:cursor-not-allowed" disabled={pickFolderMutation.isPending || !path}>
                             Save Configuration
                         </button>
                     </div>

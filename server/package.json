@@ -22,14 +22,13 @@
     "socket.io": "^4.8.3",
     "uuid": "^13.0.0",
     "ws": "^8.19.0",
-    "typescript": "^5.3.3"
-  },
-  "devDependencies": {
+    "typescript": "^5.3.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^20.11.20",
     "@types/lowdb": "^1.0.15",
     "@types/socket.io": "^3.0.1",
     "@types/uuid": "^9.0.8"
-  }
+  },
+  "devDependencies": {}
 }

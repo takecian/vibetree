@@ -11,6 +11,12 @@ export default defineConfig(({ mode }) => {
     envDir,
     server: {
       port: parseInt(env.VITE_PORT || '5173', 10),
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+      },
     },
   }
 })

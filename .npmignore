@@ -1,7 +1,4 @@
 # Exclude source code and build artifacts not needed for distribution
-client/vite.config.ts
-client/postcss.config.js
-client/tailwind.config.ts
 shared/*.ts
 docs
 tests

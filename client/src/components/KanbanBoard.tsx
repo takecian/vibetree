@@ -47,8 +47,13 @@ export function KanbanBoard() {
         await addTask(title, description);
     };
 
-    // Extract repo name from path
-    const repoName: string = config?.repoPath ? config.repoPath.split('/').pop() || 'No Repository' : 'No Repository';
+    // Extract repo name from path (handle trailing slash and Windows backslashes)
+    const repoName: string = (() => {
+        if (!config?.repoPath || !config.repoPath.trim()) return 'No Repository';
+        const normalized = config.repoPath.replace(/[/\\]+$/, '');
+        const segment = normalized.split(/[/\\]/).filter(Boolean).pop();
+        return segment || normalized || 'No Repository';
+    })();
 
     const handleSaveConfig = async (path: string, aiTool: string, copyFiles: string) => {
         await setRepoPath(path, aiTool, copyFiles);
@@ -83,7 +88,7 @@ export function KanbanBoard() {
             <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800">
                 <div className="flex items-center gap-4">
                     <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Vibe-Flow</h1>
-                    {isConnected && (
+                    {(isConnected || (config?.repoPath && config.repoPath.trim())) && (
                         <div className="flex items-center gap-1.5 bg-slate-600 text-slate-400 px-2.5 py-1 rounded-full text-sm font-medium border border-slate-600">
                             <Folder size={14} />
                             <span>{repoName}</span>

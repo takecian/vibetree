@@ -4,6 +4,7 @@ import { AppConfig, Task, GitStatus, PickFolderResult, AiToolsCheckResult } from
 
 export async function fetchConfig(): Promise<AppConfig> {
     const res = await fetch(`${API_URL}/config`);
+    if (!res.ok) throw new Error(`Failed to fetch config (${res.status})`);
     return res.json();
 }
 
@@ -13,6 +14,10 @@ export async function updateConfig(config: AppConfig): Promise<AppConfig> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
     });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `Failed to update config (${res.status})`);
+    }
     return res.json();
 }
 

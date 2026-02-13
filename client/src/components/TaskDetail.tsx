@@ -4,6 +4,7 @@ import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
 import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch } from 'lucide-react';
 import { getGitDiff } from '../api';
+import { ConfirmationModal } from './ConfirmationModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
 
@@ -25,6 +26,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
     const [diff, setDiff] = useState<string>('');
     const [loadingDiff, setLoadingDiff] = useState<boolean>(false);
     const [showOptionsMenu, setShowOptionsMenu] = useState<boolean>(false);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
 
     useEffect(() => {
         if (activeTab === 'diff' && task) {
@@ -57,10 +59,16 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
             : `${baseClasses} bg-transparent text-slate-400 hover:bg-slate-600 hover:text-slate-50`;
     };
 
-    const handleDeleteTask = async () => {
-        if (window.confirm(`Are you sure you want to delete task "${task.title}"?`)) {
+    const handleDelete = () => {
+        setShowOptionsMenu(false);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (task) {
             destroyTerminalSession(task.id);
             await deleteTask(task.id);
+            setDeleteModalOpen(false);
             if (onClose) {
                 onClose(); // Close side panel
             } else {
@@ -96,39 +104,51 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                         </button>
                         {showOptionsMenu && (
                             <div className="absolute top-full right-0 bg-slate-800 border border-slate-600 rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.2)] min-w-[120px] z-10 overflow-hidden mt-2">
-                                <button onClick={handleDeleteTask} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600">
-                                    <Trash2 size={16} /> Delete
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            <main className="flex-1 overflow-hidden p-0 flex relative">
-                <div className={`flex-1 p-6 overflow-y-auto ${activeTab !== 'details' ? 'hidden' : ''}`}>
-                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-600 max-w-[800px] mx-auto">
-                        <h3 className="mt-0 mb-4 text-base text-slate-400 uppercase tracking-wider">Description</h3>
-                        <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>
-                    </div>
-                </div>
-
-                <div className={`flex-1 bg-black p-0 ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
-                    <TerminalView taskId={task.id} />
-                </div>
-
-                <div className={`flex-1 p-6 overflow-y-auto bg-slate-900 ${activeTab !== 'diff' ? 'hidden' : ''}`}>
-                    {loadingDiff ? (
-                        <div className="flex justify-center items-center h-40 text-slate-500">Loading diff...</div>
-                    ) : (
-                        <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs overflow-x-auto">
-                            <pre className="text-slate-300 whitespace-pre font-mono">
-                                {diff || 'No changes to show.'}
-                            </pre>
-                        </div>
-                    )}
-                </div>
-            </main>
-        </div>
-    );
-}
+                                <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600">
+                                                                     <Trash2 size={16} /> Delete
+                                                                 </button>
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                             </header>
+                                 
+                                             <main className="flex-1 overflow-hidden p-0 flex relative">
+                                                 <div className={`flex-1 p-6 overflow-y-auto ${activeTab !== 'details' ? 'hidden' : ''}`}>
+                                                     <div className="bg-slate-800 p-6 rounded-xl border border-slate-600 max-w-[800px] mx-auto">
+                                                         <h3 className="mt-0 mb-4 text-base text-slate-400 uppercase tracking-wider">Description</h3>
+                                                         <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>
+                                                     </div>
+                                                 </div>
+                                 
+                                                 <div className={`flex-1 bg-black p-0 ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
+                                                     <TerminalView taskId={task.id} />
+                                                 </div>
+                                 
+                                                 <div className={`flex-1 p-6 overflow-y-auto bg-slate-900 ${activeTab !== 'diff' ? 'hidden' : ''}`}>
+                                                     {loadingDiff ? (
+                                                         <div className="flex justify-center items-center h-40 text-slate-500">Loading diff...</div>
+                                                     ) : (
+                                                         <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs overflow-x-auto">
+                                                             <pre className="text-slate-300 whitespace-pre font-mono">
+                                                                 {diff || 'No changes to show.'}
+                                                             </pre>
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </main>
+                                 
+                                                         {isDeleteModalOpen && (
+                                                             <ConfirmationModal
+                                                                 onClose={() => setDeleteModalOpen(false)}
+                                                                 onConfirm={handleConfirmDelete}
+                                                                 title="Delete Task"
+                                                                 confirmText="Delete"
+                                                             >
+                                                                 <p>Are you sure you want to delete the task "{task.title}"?</p>
+                                                                 <p className="text-sm text-slate-400 mt-4">This will also remove any associated terminal sessions. This action cannot be undone.</p>
+                                                             </ConfirmationModal>
+                                                         )}
+                                                     </div>
+                                                 );
+                                             }                                 

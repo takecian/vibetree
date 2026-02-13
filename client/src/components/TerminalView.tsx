@@ -3,7 +3,6 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { io, Socket } from 'socket.io-client';
 import 'xterm/css/xterm.css';
-import styles from './TerminalView.module.css';
 
 const SOCKET_URL = 'http://localhost:3000';
 
@@ -114,8 +113,8 @@ export function TerminalView({ taskId }: TerminalViewProps) {
     }, [taskId]);
 
     return (
-        <div className={styles.terminalContainer}>
-            <div ref={terminalRef} className={styles.terminal} />
+        <div className="w-full h-full bg-slate-900 p-2 overflow-hidden rounded-lg border border-slate-600 min-w-[100px] min-h-[100px]">
+            <div ref={terminalRef} className="w-full h-full" />
         </div>
     );
 }

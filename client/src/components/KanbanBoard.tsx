@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { RepoModal } from './RepoModal';
 import { CreateTaskModal } from './CreateTaskModal';
 import { TaskDetail } from './TaskDetail';
-import styles from './KanbanBoard.module.css';
 import { Plus, Github, Folder, Settings } from 'lucide-react';
 import { Task, AppConfig } from '../types'; // Import Task and AppConfig interfaces
 
@@ -33,7 +32,7 @@ export function KanbanBoard() {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
     if (loading) {
-        return <div className={styles.loading}>Loading...</div>;
+        return <div className="flex justify-center items-center h-screen text-xl text-slate-400 bg-slate-900">Loading...</div>;
     }
 
     const onDragEnd = (result: DropResult) => {
@@ -57,7 +56,7 @@ export function KanbanBoard() {
     };
 
     return (
-        <div className={styles.board}>
+        <div className="h-screen flex flex-col bg-slate-900 text-slate-50 relative overflow-hidden">
             {/* Show modal if NOT connected (forced) OR if settings explicitly open (optional) */}
             {(!isConnected || showSettings) && (
                 <RepoModal
@@ -81,38 +80,46 @@ export function KanbanBoard() {
                 />
             )}
 
-            <header className={styles.header}>
-                <div className={styles.headerLeft}>
-                    <h1>Vibe-Flow</h1>
+            <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800">
+                <div className="flex items-center gap-4">
+                    <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Vibe-Flow</h1>
                     {isConnected && (
-                        <div className={styles.repoBadge}>
+                        <div className="flex items-center gap-1.5 bg-slate-600 text-slate-400 px-2.5 py-1 rounded-full text-sm font-medium border border-slate-600">
                             <Folder size={14} />
                             <span>{repoName}</span>
                         </div>
                     )}
                 </div>
-                <div className={styles.headerRight}>
-                    <button onClick={() => setShowSettings(true)} className={styles.iconButton} title="Settings">
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setShowSettings(true)} 
+                        className="bg-transparent border-0 cursor-pointer text-slate-400 p-2 rounded-md flex items-center justify-center transition-all hover:bg-slate-600 hover:text-slate-50" 
+                        title="Settings"
+                    >
                         <Settings size={20} />
                     </button>
-                    <button onClick={() => setIsCreateModalOpen(true)} className={styles.addButton} disabled={!isConnected}>
+                    <button 
+                        onClick={() => setIsCreateModalOpen(true)} 
+                        className="flex items-center gap-1.5 bg-blue-500 text-white border-0 px-4 py-2 rounded-md font-medium cursor-pointer transition-colors hover:bg-blue-600 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed" 
+                        disabled={!isConnected}
+                    >
                         <Plus size={16} /> New Task
                     </button>
                 </div>
             </header>
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className={styles.columns}>
+                <div className="flex flex-1 overflow-x-auto p-6 gap-6">
                     {Object.entries(COLUMNS).map(([columnId, title]) => (
                         <Droppable key={columnId} droppableId={columnId}>
                             {(provided) => (
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={styles.column}
+                                    className="flex-1 min-w-[300px] bg-slate-800 rounded-xl p-4 flex flex-col"
                                 >
-                                    <h2 className={styles.columnTitle}>{title}</h2>
-                                    <div className={styles.taskList}>
+                                    <h2 className="m-0 mb-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h2>
+                                    <div className="flex-1 overflow-y-auto flex flex-col gap-3">
                                         {tasks.filter(t => t.status === columnId).map((task: Task, index: number) => (
                                             <Draggable key={task.id} draggableId={task.id} index={index}>
                                                 {(provided) => (
@@ -120,15 +127,15 @@ export function KanbanBoard() {
                                                         ref={provided.innerRef}
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
-                                                        className={styles.taskCard}
+                                                        className="bg-slate-600 rounded-lg p-3 cursor-grab transition-all border border-slate-600 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-500"
                                                         onClick={() => setSelectedTaskId(task.id)}
                                                     >
-                                                        <div className={styles.taskHeader}>
-                                                            <span className={styles.taskTitle}>{task.title}</span>
+                                                        <div>
+                                                            <span className="font-medium block mb-2">{task.title}</span>
                                                         </div>
-                                                        <div className={styles.taskFooter}>
-                                                            <span className={styles.taskId}>#{task.id.slice(0, 4)}</span>
-                                                            {task.branchName && <div className={styles.badge}><Github size={12} /> {task.branchName}</div>}
+                                                        <div className="flex justify-between items-center text-xs text-slate-400">
+                                                            <span>#{task.id.slice(0, 4)}</span>
+                                                            {task.branchName && <div className="flex items-center gap-1 bg-blue-500/10 text-blue-300 px-1.5 py-0.5 rounded"><Github size={12} /> {task.branchName}</div>}
                                                         </div>
                                                     </div>
                                                 )}

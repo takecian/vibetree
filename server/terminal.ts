@@ -60,6 +60,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
         // Remove any existing listeners for this termId to prevent duplicates
         socket.removeAllListeners(`terminal:input:${termId}`);
         socket.removeAllListeners(`terminal:resize:${termId}`);
+        socket.removeAllListeners('disconnect');
         
         socket.on(`terminal:input:${termId}`, (data: string) => {
             session.pty.write(data);

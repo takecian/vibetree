@@ -7,7 +7,7 @@ import { DBData } from './types'; // Import the DBData interface
 let db: Low<DBData>;
 
 async function initDB(repoPath: string): Promise<Low<DBData>> {
-    const vibeDir = path.join(repoPath, '.vibe-flow');
+    const vibeDir = path.join(repoPath, '.vibetree');
     if (!fs.existsSync(vibeDir)) {
         fs.mkdirSync(vibeDir, { recursive: true });
     }

@@ -96,7 +96,7 @@ app.use((req: Request, res: Response) => {
     }
 });
 
-const PORT = process.env.VIBE_FLOW_PORT || 3000;
+const PORT = process.env.VIBETREE_PORT || 3000;
 server.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);
 });

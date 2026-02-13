@@ -25,7 +25,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Vibe-Flow specific
-.vibe-flow
+.vibetree/
 db.json
 *.db
 .ai-tools-config.json

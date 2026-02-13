@@ -22,6 +22,8 @@ const argv = yargs(hideBin(process.argv))
     .argv;
 
 (async () => {
+    const PORT = process.env.VIBETREE_PORT || 5179;
+
     // 1. Resolve Repo Path
     let repoPath = argv.repo ? path.resolve(argv.repo) : process.cwd();
 
@@ -31,7 +33,7 @@ const argv = yargs(hideBin(process.argv))
     }
 
     // 2. Resolve AI Tool
-    const configPath = path.join(repoPath, '.vibe-flow', 'config.json');
+    const configPath = path.join(repoPath, '.vibetree', 'config.json');
     let config = {};
     if (fs.existsSync(configPath)) {
         try {
@@ -55,14 +57,15 @@ const argv = yargs(hideBin(process.argv))
         aiTool = response.aiTool;
 
         // Save preference
-        const vibeDir = path.join(repoPath, '.vibe-flow');
+        const vibeDir = path.join(repoPath, '.vibetree');
         if (!fs.existsSync(vibeDir)) fs.mkdirSync(vibeDir, { recursive: true });
         fs.writeFileSync(path.join(vibeDir, 'config.json'), JSON.stringify({ aiTool }, null, 2));
     }
 
-    console.log(`Starting Vibe-Flow...`);
+    console.log(`Starting VibeTree...`);
     console.log(`Repository: ${repoPath}`);
     console.log(`AI Tool: ${aiTool}`);
+    console.log(`Port: ${PORT}`);
 
     // 3. Start Server
     const pkgRoot = path.join(__dirname, '..');
@@ -72,7 +75,7 @@ const argv = yargs(hideBin(process.argv))
         ...process.env,
         REPO_PATH: repoPath,
         AI_TOOL: aiTool,
-        VIBE_FLOW_PORT: process.env.VIBE_FLOW_PORT || 3000,
+        VIBETREE_PORT: PORT,
     };
 
     if (!fs.existsSync(serverPath)) {
@@ -110,10 +113,9 @@ const argv = yargs(hideBin(process.argv))
 
     // Open Browser
     const { default: open } = await import('open');
-    const port = process.env.VIBE_FLOW_PORT || 5179;
     setTimeout(() => {
-        console.log(`Opening dashboard at http://localhost:${port}...`);
-        open(`http://localhost:${port}`);
+        console.log(`Opening dashboard at http://localhost:${PORT}...`);
+        open(`http://localhost:${PORT}`);
     }, 2000);
 
 })();

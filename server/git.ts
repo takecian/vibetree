@@ -34,7 +34,7 @@ async function createWorktree(
     copyFiles?: string
 ): Promise<{ success: boolean; path: string; message?: string }> {
     if (!repoPath) throw new Error("Repository not selected");
-    const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
 
     if (fs.existsSync(worktreePath)) {
         return { success: true, path: worktreePath, message: 'Worktree already exists' };

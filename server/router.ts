@@ -118,7 +118,7 @@ export const appRouter = router({
         .input(z.object({ taskId: z.string().optional() }))
         .query(async ({ input, ctx }) => {
             const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibe-flow', 'worktrees', input.taskId) : repoPath;
+            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
             const branch = await runGit('git branch --show-current', cwd, repoPath);
             const status = await runGit('git status --short', cwd, repoPath);
             return { branch, status };
@@ -127,7 +127,7 @@ export const appRouter = router({
         .input(z.object({ taskId: z.string().optional() }))
         .query(async ({ input, ctx }) => {
             const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibe-flow', 'worktrees', input.taskId) : repoPath;
+            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
             const diff = await runGit('git diff', cwd, repoPath);
             return { diff };
         }),
@@ -138,7 +138,7 @@ export const appRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
             const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibe-flow', 'worktrees', input.taskId) : repoPath;
+            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
             await runGit('git add .', cwd, repoPath);
             await runGit(`git commit -m "${input.message}"`, cwd, repoPath);
             return { success: true };

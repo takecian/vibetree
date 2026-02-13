@@ -79,7 +79,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
         if (sessions[taskId]) return;
         const { repoPath } = getState();
         if (!repoPath) return;
-        const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
+        const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
         if (!fs.existsSync(worktreePath)) return;
         try {
             fs.accessSync(worktreePath, fs.constants.R_OK | fs.constants.X_OK);
@@ -140,7 +140,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
                     taskEnv.TASK_ID = task.id;
                     taskEnv.TASK_TITLE = task.title;
                     taskEnv.TASK_DESCRIPTION = task.description;
-                    const worktreePath = path.join(repoPath, '.vibe-flow', 'worktrees', taskId);
+                    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
                     if (fs.existsSync(worktreePath)) workingDir = worktreePath;
                 }
             }

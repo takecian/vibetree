@@ -2,12 +2,14 @@
 
 Vibetree is a local AI-enhanced Kanban board designed for seamless task management and code integration. It combines a modern React frontend with a robust Node.js backend, built with TypeScript for enhanced type safety and developer experience.
 
+**🔒 Privacy First**: Vibetree runs 100% locally on your machine. No data is sent to external servers - your code, tasks, and AI interactions stay private and secure.
+
 ## Quick Start with npx
 
 You can launch Vibetree directly using `npx` without installation:
 
 ```bash
-npx github:takecian/vibetree
+npx vibetree
 ```
 
 The app will start and automatically open in your default browser at `http://localhost:3000`.

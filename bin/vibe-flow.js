@@ -75,7 +75,7 @@ const argv = yargs(hideBin(process.argv))
         ...process.env,
         REPO_PATH: repoPath,
         AI_TOOL: aiTool,
-        PORT: 3000 // Default port
+        VIBE_FLOW_PORT: process.env.VIBE_FLOW_PORT || 3000,
     };
 
     // Check if server exists (it might be in node_modules if installed via npm)

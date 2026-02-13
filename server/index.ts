@@ -1,3 +1,8 @@
+import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
+
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -86,7 +91,7 @@ app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', ...STATE });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.VIBE_FLOW_PORT || 3000;
 server.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);
 });

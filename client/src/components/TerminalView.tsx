@@ -4,7 +4,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { io, Socket } from 'socket.io-client';
 import 'xterm/css/xterm.css';
 
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface TerminalViewProps {
     taskId: string;

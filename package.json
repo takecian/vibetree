@@ -1,6 +1,6 @@
 {
   "name": "vibetree",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Local task management with Git worktrees and AI integration",
   "main": "bin/vibe-flow.js",
   "bin": {

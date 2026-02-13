@@ -21,3 +21,4 @@ This setup facilitates seamless interaction between the user interface, the back
 
 For detailed technical information, please refer to:
 -   [Architecture Documentation](docs/architecture.md) - Comprehensive architecture overview, technology stack, data flow, API endpoints, and design decisions
+-   [How to Release](docs/how-to-release.md) - Instructions on how to release a new version of the project

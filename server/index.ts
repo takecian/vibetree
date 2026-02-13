@@ -96,7 +96,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // Catch-all route to serve index.html for client-side routing
-app.get('*', (req: Request, res: Response) => {
+app.get('(.*)', (req: Request, res: Response) => {
     const indexPath = path.join(clientPath, 'index.html');
     if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);

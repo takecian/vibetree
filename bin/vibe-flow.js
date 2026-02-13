@@ -5,7 +5,7 @@ const { spawn, spawnSync } = require('child_process');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const prompts = require('prompts');
-const open = require('open');
+// const open = require('open'); // Moved to dynamic import
 
 const argv = yargs(hideBin(process.argv))
     .option('repo', {
@@ -109,6 +109,7 @@ const argv = yargs(hideBin(process.argv))
     });
 
     // Open Browser
+    const { default: open } = await import('open');
     const port = process.env.VIBE_FLOW_PORT || 3000;
     setTimeout(() => {
         console.log(`Opening dashboard at http://localhost:${port}...`);

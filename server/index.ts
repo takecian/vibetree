@@ -54,8 +54,8 @@ app.use(
         createContext: (): Context => ({
             getState: () => STATE,
             createWorktree: (repoPath, taskId, branchName) => createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
-            ensureTerminalForTask,
-            runAiForTask,
+            ensureTerminalForTask: (taskId, repoPath) => ensureTerminalForTask(taskId, repoPath),
+            runAiForTask: (taskId, repoPath) => runAiForTask(taskId, repoPath),
             removeWorktree: (repoPath, taskId, branchName) => import('./git').then(m => m.removeWorktree(repoPath, taskId, branchName)),
             shutdownTerminalForTask,
         }),
@@ -63,15 +63,18 @@ app.use(
 );
 
 // Initialize modules
-if (STATE.repoPath) {
-    initDB(STATE.repoPath).then(async (db) => {
-        console.log(`[Server] DB initialized. Auto-spawning terminals...`);
-        if (db.data?.tasks) {
-            for (const task of db.data.tasks) {
-                await ensureTerminalForTask(task.id);
+const repoPaths = STATE.repoPaths || (STATE.repoPath ? [STATE.repoPath] : []);
+for (const repoPath of repoPaths) {
+    if (repoPath) {
+        initDB(repoPath).then(async (db) => {
+            console.log(`[Server] DB initialized for ${repoPath}. Auto-spawning terminals...`);
+            if (db.data?.tasks) {
+                for (const task of db.data.tasks) {
+                    await ensureTerminalForTask(task.id, repoPath);
+                }
             }
-        }
-    }).catch(err => console.error("Failed to init DB:", err));
+        }).catch(err => console.error(`Failed to init DB for ${repoPath}:`, err));
+    }
 }
 
 // Setup legacy REST Routes (Disabled - using tRPC instead)

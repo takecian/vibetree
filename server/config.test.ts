@@ -47,7 +47,10 @@ describe('config', () => {
       fs.writeFileSync(mockConfigPath, JSON.stringify(testConfig));
 
       const config = loadConfig();
-      expect(config).toEqual(testConfig);
+      expect(config).toEqual({
+        ...testConfig,
+        repoPaths: ['/test/repo']
+      });
     });
 
     it('should prioritize environment variables over config file', () => {
@@ -77,6 +80,20 @@ describe('config', () => {
 
       const config = loadConfig();
       expect(config.copyFiles).toBe('.env\n.env.local');
+    });
+
+    it('should normalize paths during load', () => {
+      const testConfig = {
+        repoPath: '/test/repo/',
+        repoPaths: ['/another/repo/'],
+        aiTool: 'claude',
+        copyFiles: '',
+      };
+      fs.writeFileSync(mockConfigPath, JSON.stringify(testConfig));
+
+      const config = loadConfig();
+      expect(config.repoPath).toBe('/test/repo');
+      expect(config.repoPaths).toEqual(['/another/repo']);
     });
 
     it('should handle corrupted config file gracefully', () => {

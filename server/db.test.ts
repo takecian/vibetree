@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { initDB, getDB } from './db';
+import { initDB, getDB, clearDBs } from './db';
 
 describe('db', () => {
   let testRepoPath: string;
@@ -18,6 +18,7 @@ describe('db', () => {
     if (fs.existsSync(testRepoPath)) {
       fs.rmSync(testRepoPath, { recursive: true, force: true });
     }
+    clearDBs();
   });
 
   describe('initDB', () => {
@@ -65,7 +66,7 @@ describe('db', () => {
     it('should preserve existing data if db.json exists', async () => {
       const vibeDir = path.join(testRepoPath, '.vibetree');
       fs.mkdirSync(vibeDir, { recursive: true });
-      
+
       const existingData = {
         tasks: [
           {
@@ -93,7 +94,7 @@ describe('db', () => {
   describe('getDB', () => {
     it('should return the initialized database', async () => {
       await initDB(testRepoPath);
-      const db = getDB();
+      const db = getDB(testRepoPath);
 
       expect(db).toBeDefined();
       expect(db.data).toBeDefined();
@@ -101,8 +102,19 @@ describe('db', () => {
 
     it('should return the same instance across multiple calls', async () => {
       await initDB(testRepoPath);
-      const db1 = getDB();
-      const db2 = getDB();
+      const db1 = getDB(testRepoPath);
+      const db2 = getDB(testRepoPath);
+
+      expect(db1).toBe(db2);
+    });
+
+    it('should normalize paths', async () => {
+      const normalized = testRepoPath.replace(/[/\\]+$/, '');
+      const withSlash = normalized + '/';
+
+      await initDB(withSlash);
+      const db1 = getDB(normalized);
+      const db2 = getDB(withSlash);
 
       expect(db1).toBe(db2);
     });

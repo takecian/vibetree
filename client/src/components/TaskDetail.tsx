@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
 import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder } from 'lucide-react';
@@ -10,19 +10,20 @@ import { Task } from '../types';
 import { trpc } from '../trpc';
 
 interface TaskDetailProps {
-    taskId?: string;
+    taskId: string;
+    repoPath: string;
     onClose?: () => void;
 }
 
-export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
+export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const { t } = useTranslation();
-    const { id } = useParams<string>();
     const navigate = useNavigate();
-    const { tasks, deleteTask } = useTasks();
+    const { deleteTask } = useTasks();
     const { destroyTerminalSession } = useTerminals();
 
-    // Resolve ID from props (side panel) or params (route)
-    const effectiveId = taskId || id;
+    // Resolve ID from props
+    const effectiveId = taskId;
+    const { data: tasks = [] } = trpc.getTasks.useQuery({ repoPath });
     const task: Task | undefined = tasks.find(t => t.id === effectiveId);
     const [activeTab, setActiveTab] = useState<'terminal' | 'details' | 'diff'>('terminal');
     const [showOptionsMenu, setShowOptionsMenu] = useState<boolean>(false);
@@ -30,11 +31,11 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
 
     // tRPC Queries
     const { data: diffData, isLoading: loadingDiff } = trpc.getGitDiff.useQuery(
-        { taskId: effectiveId },
+        { repoPath, taskId: effectiveId },
         { enabled: activeTab === 'diff' && !!effectiveId }
     );
     const { data: worktree } = trpc.getWorktreePath.useQuery(
-        { taskId: effectiveId! },
+        { repoPath, taskId: effectiveId },
         { enabled: !!effectiveId }
     );
     const openDirectory = trpc.openDirectory.useMutation();
@@ -62,7 +63,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
     const handleConfirmDelete = async () => {
         if (task) {
             destroyTerminalSession(task.id);
-            await deleteTask(task.id);
+            await deleteTask(repoPath, task.id);
             setDeleteModalOpen(false);
             if (onClose) {
                 onClose(); // Close side panel
@@ -132,7 +133,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                 </div>
 
                 <div className={`flex-1 bg-black p-0 ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
-                    <TerminalView taskId={task.id} />
+                    <TerminalView taskId={task.id} repoPath={repoPath} />
                 </div>
 
                 <div className={`flex-1 p-6 overflow-y-auto bg-slate-900 ${activeTab !== 'diff' ? 'hidden' : ''}`}>
@@ -161,4 +162,4 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
         </div>
     );
 }
-                                 
+

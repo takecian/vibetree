@@ -5,7 +5,7 @@ import fs from 'fs';
 import { Server, Socket } from 'socket.io';
 import { Task, AppConfig } from './types';
 
-type GetTaskByIdFunction = (taskId: string) => Promise<Task | undefined>;
+type GetTaskByIdFunction = (taskId: string, repoPath: string) => Promise<Task | undefined>;
 
 const SHELL_INITIALIZATION_DELAY_MS = 800;
 const shell = os.platform() === 'win32' ? 'powershell.exe' : 'zsh';
@@ -75,9 +75,8 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
     }
 
     /** Create terminal for a task when task is created (worktree must already exist). */
-    async function ensureTerminalForTask(taskId: string): Promise<void> {
+    async function ensureTerminalForTask(taskId: string, repoPath: string): Promise<void> {
         if (sessions[taskId]) return;
-        const { repoPath } = getState();
         if (!repoPath) return;
         const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
         if (!fs.existsSync(worktreePath)) return;
@@ -91,14 +90,14 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
     }
 
     /** Run AI tool with task context (call when task is moved to in progress). */
-    async function runAiForTask(taskId: string): Promise<void> {
+    async function runAiForTask(taskId: string, repoPath: string): Promise<void> {
         const session = sessions[taskId];
         if (!session) return;
         const { aiTool } = getState();
         if (!aiTool) return;
         const safeAiToolPattern = /^[a-zA-Z0-9._-]+$/;
         if (!safeAiToolPattern.test(aiTool)) return;
-        const task = await getTaskById(taskId);
+        const task = await getTaskById(taskId, repoPath);
         if (!task) return;
         const prompt = buildAiPrompt(task);
         const escaped = escapeForShellDoubleQuoted(prompt);
@@ -114,10 +113,9 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
     }
 
     io.on('connection', (socket: Socket) => {
-        socket.on('terminal:create', async ({ cols, rows, taskId }: { cols: number; rows: number; taskId: string }) => {
-            const { repoPath } = getState();
+        socket.on('terminal:create', async ({ cols, rows, taskId, repoPath }: { cols: number; rows: number; taskId: string; repoPath: string }) => {
             if (!repoPath) {
-                socket.emit('terminal:error', 'Repository path not configured');
+                socket.emit('terminal:error', 'Repository path not provided');
                 return;
             }
 
@@ -135,7 +133,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
             const taskEnv: NodeJS.ProcessEnv = {};
 
             if (taskId && taskId !== 'default') {
-                const task = await getTaskById(taskId);
+                const task = await getTaskById(taskId, repoPath);
                 if (task) {
                     taskEnv.TASK_ID = task.id;
                     taskEnv.TASK_TITLE = task.title;

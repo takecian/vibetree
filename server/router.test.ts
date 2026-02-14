@@ -1,21 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
 import { appRouter } from './router';
-import { initDB } from './db';
+import { initDB, clearDBs } from './db';
 import { Task, AppConfig } from './types';
+import { Context } from './trpc';
 
 const execAsync = util.promisify(exec);
 
 describe('router', () => {
   let testRepoPath: string;
   let mockState: AppConfig;
-  let mockCreateWorktree: ReturnType<typeof vi.fn>;
-  let mockEnsureTerminalForTask: ReturnType<typeof vi.fn>;
-  let mockRunAiForTask: ReturnType<typeof vi.fn>;
+  let mockCreateWorktree: Mock;
+  let mockEnsureTerminalForTask: Mock;
+  let mockRunAiForTask: Mock;
 
   beforeEach(async () => {
     // Create a temporary directory for testing
@@ -46,14 +47,17 @@ describe('router', () => {
     if (fs.existsSync(testRepoPath)) {
       fs.rmSync(testRepoPath, { recursive: true, force: true });
     }
+    clearDBs();
     vi.clearAllMocks();
   });
 
-  const createContext = () => ({
+  const createContext = (): Context => ({
     getState: () => mockState,
-    createWorktree: mockCreateWorktree,
-    ensureTerminalForTask: mockEnsureTerminalForTask,
-    runAiForTask: mockRunAiForTask,
+    createWorktree: mockCreateWorktree as any,
+    ensureTerminalForTask: mockEnsureTerminalForTask as any,
+    runAiForTask: mockRunAiForTask as any,
+    shutdownTerminalForTask: vi.fn().mockResolvedValue(undefined) as any,
+    removeWorktree: vi.fn().mockResolvedValue(undefined) as any,
   });
 
   describe('Config Procedures', () => {
@@ -73,7 +77,7 @@ describe('router', () => {
         fs.mkdirSync(newPath, { recursive: true });
 
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.updateConfig({
           repoPath: newPath,
         });
@@ -86,7 +90,7 @@ describe('router', () => {
 
       it('should update aiTool', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.updateConfig({
           aiTool: 'codex',
         });
@@ -96,7 +100,7 @@ describe('router', () => {
 
       it('should update copyFiles', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.updateConfig({
           copyFiles: '.env\nconfig.json',
         });
@@ -106,7 +110,7 @@ describe('router', () => {
 
       it('should throw error if repoPath does not exist', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         await expect(
           caller.updateConfig({ repoPath: '/nonexistent/path' })
         ).rejects.toThrow('Path does not exist');
@@ -114,7 +118,7 @@ describe('router', () => {
 
       it('should allow empty repoPath', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.updateConfig({
           repoPath: '',
         });
@@ -128,13 +132,13 @@ describe('router', () => {
     describe('getTasks', () => {
       it('should return empty array when no tasks exist', async () => {
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getTasks();
+        const result = await caller.getTasks({ repoPath: testRepoPath });
 
         expect(result).toEqual([]);
       });
 
       it('should return all tasks', async () => {
-        const db = (await import('./db')).getDB();
+        const db = (await import('./db')).getDB(testRepoPath);
         await db.read();
 
         const testTasks: Task[] = [
@@ -158,7 +162,7 @@ describe('router', () => {
         await db.write();
 
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getTasks();
+        const result = await caller.getTasks({ repoPath: testRepoPath });
 
         expect(result).toHaveLength(2);
         expect(result[0].id).toBe('task-1');
@@ -169,8 +173,9 @@ describe('router', () => {
     describe('createTask', () => {
       it('should create a new task with title', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.createTask({
+          repoPath: testRepoPath,
           title: 'New Task',
         });
 
@@ -183,8 +188,9 @@ describe('router', () => {
 
       it('should create a task with description', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         const result = await caller.createTask({
+          repoPath: testRepoPath,
           title: 'New Task',
           description: 'Task description',
         });
@@ -194,8 +200,9 @@ describe('router', () => {
 
       it('should call createWorktree when repoPath is set', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         await caller.createTask({
+          repoPath: testRepoPath,
           title: 'New Task',
         });
 
@@ -204,8 +211,9 @@ describe('router', () => {
 
       it('should call ensureTerminalForTask when repoPath is set', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         await caller.createTask({
+          repoPath: testRepoPath,
           title: 'New Task',
         });
 
@@ -214,9 +222,10 @@ describe('router', () => {
 
       it('should call runAiForTask when repoPath is set', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         // Add a small delay to allow async call to complete
         await caller.createTask({
+          repoPath: testRepoPath,
           title: 'New Task',
         });
 
@@ -225,12 +234,13 @@ describe('router', () => {
 
       it('should persist task to database', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         await caller.createTask({
+          repoPath: testRepoPath,
           title: 'Persisted Task',
         });
 
-        const db = (await import('./db')).getDB();
+        const db = (await import('./db')).getDB(testRepoPath);
         await db.read();
 
         expect(db.data.tasks).toHaveLength(1);
@@ -240,7 +250,7 @@ describe('router', () => {
 
     describe('updateTask', () => {
       it('should update task title', async () => {
-        const db = (await import('./db')).getDB();
+        const db = (await import('./db')).getDB(testRepoPath);
         await db.read();
 
         const testTask: Task = {
@@ -256,6 +266,7 @@ describe('router', () => {
 
         const caller = appRouter.createCaller(createContext());
         const result = await caller.updateTask({
+          repoPath: testRepoPath,
           id: 'task-update-1',
           updates: { title: 'Updated Title' },
         });
@@ -265,7 +276,7 @@ describe('router', () => {
       });
 
       it('should update task description', async () => {
-        const db = (await import('./db')).getDB();
+        const db = (await import('./db')).getDB(testRepoPath);
         await db.read();
 
         const testTask: Task = {
@@ -281,6 +292,7 @@ describe('router', () => {
 
         const caller = appRouter.createCaller(createContext());
         const result = await caller.updateTask({
+          repoPath: testRepoPath,
           id: 'task-update-2',
           updates: { description: 'Updated Description' },
         });
@@ -290,9 +302,10 @@ describe('router', () => {
 
       it('should throw error when task does not exist', async () => {
         const caller = appRouter.createCaller(createContext());
-        
+
         await expect(
           caller.updateTask({
+            repoPath: testRepoPath,
             id: 'non-existent',
             updates: { title: 'New Title' },
           })
@@ -302,7 +315,7 @@ describe('router', () => {
 
     describe('deleteTask', () => {
       it('should delete task by id', async () => {
-        const db = (await import('./db')).getDB();
+        const db = (await import('./db')).getDB(testRepoPath);
         await db.read();
 
         const testTask: Task = {
@@ -317,7 +330,7 @@ describe('router', () => {
         await db.write();
 
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.deleteTask('task-delete-1');
+        const result = await caller.deleteTask({ repoPath: testRepoPath, taskId: 'task-delete-1' });
 
         expect(result.success).toBe(true);
 
@@ -327,9 +340,9 @@ describe('router', () => {
 
       it('should not throw error when deleting non-existent task', async () => {
         const caller = appRouter.createCaller(createContext());
-        
-        const result = await caller.deleteTask('non-existent');
-        
+
+        const result = await caller.deleteTask({ repoPath: testRepoPath, taskId: 'non-existent' });
+
         expect(result.success).toBe(true);
       });
     });
@@ -341,7 +354,7 @@ describe('router', () => {
       await execAsync('git init', { cwd: testRepoPath });
       await execAsync('git config user.email "test@example.com"', { cwd: testRepoPath });
       await execAsync('git config user.name "Test User"', { cwd: testRepoPath });
-      
+
       // Create initial commit
       const testFile = path.join(testRepoPath, 'test.txt');
       fs.writeFileSync(testFile, 'content');
@@ -352,7 +365,7 @@ describe('router', () => {
     describe('getGitStatus', () => {
       it('should return git status for main repo', async () => {
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitStatus({});
+        const result = await caller.getGitStatus({ repoPath: testRepoPath });
 
         expect(result.branch).toBeDefined();
         expect(result.status).toBeDefined();
@@ -360,7 +373,7 @@ describe('router', () => {
 
       it('should return empty status when no changes', async () => {
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitStatus({});
+        const result = await caller.getGitStatus({ repoPath: testRepoPath });
 
         expect(result.status).toBe('');
       });
@@ -369,14 +382,14 @@ describe('router', () => {
     describe('getGitDiff', () => {
       it('should return git diff', async () => {
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitDiff({});
+        const result = await caller.getGitDiff({ repoPath: testRepoPath });
 
         expect(result).toHaveProperty('diff');
       });
 
       it('should return empty diff when no changes', async () => {
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitDiff({});
+        const result = await caller.getGitDiff({ repoPath: testRepoPath });
 
         expect(result.diff).toBe('');
       });
@@ -389,6 +402,7 @@ describe('router', () => {
 
         const caller = appRouter.createCaller(createContext());
         const result = await caller.createCommit({
+          repoPath: testRepoPath,
           message: 'Test commit',
         });
 

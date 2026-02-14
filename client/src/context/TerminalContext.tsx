@@ -12,7 +12,7 @@ interface TerminalSession {
 }
 
 interface TerminalContextType {
-    getTerminalSession: (taskId: string) => TerminalSession;
+    getTerminalSession: (taskId: string, repoPath: string) => TerminalSession;
     destroyTerminalSession: (taskId: string) => void;
 }
 
@@ -21,7 +21,7 @@ const TerminalContext = createContext<TerminalContextType | undefined>(undefined
 export function TerminalProvider({ children }: { children: React.ReactNode }) {
     const sessionsRef = useRef<Map<string, TerminalSession>>(new Map());
 
-    const getTerminalSession = useCallback((taskId: string): TerminalSession => {
+    const getTerminalSession = useCallback((taskId: string, repoPath: string): TerminalSession => {
         if (sessionsRef.current.has(taskId)) {
             return sessionsRef.current.get(taskId)!;
         }
@@ -41,7 +41,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
         terminal.loadAddon(fitAddon);
 
         socket.on('connect', () => {
-            socket.emit('terminal:create', { cols: 80, rows: 24, taskId });
+            socket.emit('terminal:create', { cols: 80, rows: 24, taskId, repoPath });
         });
 
         socket.on(`terminal:data:${taskId || 'default'}`, (data: string) => {

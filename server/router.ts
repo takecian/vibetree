@@ -1,10 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
-import { getDB } from './db';
 import { v4 as uuidv4 } from 'uuid';
 import { Task } from './types';
 import { createWorktree, runGit } from './git';
-import { getTaskById as getTaskByIdUtil } from './tasks';
 import { exec } from 'child_process';
 import util from 'util';
 import os from 'os';
@@ -22,6 +20,7 @@ export const appRouter = router({
     updateConfig: publicProcedure
         .input(z.object({
             repoPath: z.string().optional(),
+            repoPaths: z.array(z.string()).optional(),
             aiTool: z.string().optional(),
             copyFiles: z.string().optional(),
         }))
@@ -33,6 +32,16 @@ export const appRouter = router({
                 }
                 state.repoPath = input.repoPath || '';
             }
+            if (input.repoPaths !== undefined) {
+                state.repoPaths = input.repoPaths;
+                // Initialize any new DBs
+                const { initDB } = await import('./db');
+                for (const p of input.repoPaths) {
+                    if (p && fs.existsSync(p)) {
+                        await initDB(p);
+                    }
+                }
+            }
             if (input.aiTool !== undefined) state.aiTool = input.aiTool;
             if (input.copyFiles !== undefined) state.copyFiles = input.copyFiles;
 
@@ -41,19 +50,22 @@ export const appRouter = router({
         }),
 
     // Task Procedures
-    getTasks: publicProcedure.query(async () => {
-        const db = getDB();
-        await db.read();
-        return db.data.tasks;
-    }),
+    getTasks: publicProcedure
+        .input(z.object({ repoPath: z.string() }))
+        .query(async ({ input }) => {
+            const { initDB } = await import('./db');
+            const db = await initDB(input.repoPath);
+            return db.data.tasks;
+        }),
     createTask: publicProcedure
         .input(z.object({
+            repoPath: z.string(),
             title: z.string(),
             description: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const db = getDB();
-            await db.read();
+            const { initDB } = await import('./db');
+            const db = await initDB(input.repoPath);
             const newTask: Task = {
                 id: uuidv4(),
                 title: input.title,
@@ -65,17 +77,16 @@ export const appRouter = router({
             await db.write();
 
             // Handle side effects (worktree, terminal, AI)
-            const { repoPath } = ctx.getState();
-            if (repoPath && ctx.createWorktree && ctx.ensureTerminalForTask && ctx.runAiForTask) {
+            if (input.repoPath && ctx.createWorktree && ctx.ensureTerminalForTask && ctx.runAiForTask) {
                 try {
-                    console.log(`[tRPC] Creating worktree for task ${newTask.id}`);
-                    await ctx.createWorktree(repoPath, newTask.id, newTask.branchName || '');
+                    console.log(`[tRPC] Creating worktree for task ${newTask.id} in ${input.repoPath}`);
+                    await ctx.createWorktree(input.repoPath, newTask.id, newTask.branchName || '');
 
                     console.log(`[tRPC] Ensuring terminal for task ${newTask.id}`);
-                    await ctx.ensureTerminalForTask(newTask.id);
+                    await ctx.ensureTerminalForTask(newTask.id, input.repoPath);
 
                     console.log(`[tRPC] Running AI for task ${newTask.id}`);
-                    ctx.runAiForTask(newTask.id).catch(e => console.error(`[tRPC] runAiForTask error:`, e));
+                    ctx.runAiForTask(newTask.id, input.repoPath).catch(e => console.error(`[tRPC] runAiForTask error:`, e));
                 } catch (e) {
                     console.error(`[tRPC] Side effects failed for task ${newTask.id}:`, e);
                 }
@@ -85,6 +96,7 @@ export const appRouter = router({
         }),
     updateTask: publicProcedure
         .input(z.object({
+            repoPath: z.string(),
             id: z.string(),
             updates: z.object({
                 title: z.string().optional(),
@@ -92,8 +104,8 @@ export const appRouter = router({
             }),
         }))
         .mutation(async ({ input }) => {
-            const db = getDB();
-            await db.read();
+            const { initDB } = await import('./db');
+            const db = await initDB(input.repoPath);
             const taskIndex = db.data.tasks.findIndex((t: Task) => t.id === input.id);
             if (taskIndex > -1) {
                 db.data.tasks[taskIndex] = { ...db.data.tasks[taskIndex], ...input.updates };
@@ -104,67 +116,63 @@ export const appRouter = router({
             }
         }),
     deleteTask: publicProcedure
-        .input(z.string())
+        .input(z.object({ repoPath: z.string(), taskId: z.string() }))
         .mutation(async ({ input, ctx }) => {
-            const db = getDB();
-            await db.read();
-            const task = db.data.tasks.find((t: Task) => t.id === input);
+            const { initDB } = await import('./db');
+            const db = await initDB(input.repoPath);
+            const task = db.data.tasks.find((t: Task) => t.id === input.taskId);
 
             // Cleanup side effects
-            const { repoPath } = ctx.getState();
             if (ctx.shutdownTerminalForTask) {
-                console.log(`[tRPC] Shutting down terminal for task ${input}`);
-                await ctx.shutdownTerminalForTask(input);
+                console.log(`[tRPC] Shutting down terminal for task ${input.taskId}`);
+                await ctx.shutdownTerminalForTask(input.taskId);
             }
-            if (repoPath && ctx.removeWorktree && task) {
-                console.log(`[tRPC] Removing worktree and branch for task ${input} (${task.branchName})`);
+            if (input.repoPath && ctx.removeWorktree && task) {
+                console.log(`[tRPC] Removing worktree and branch for task ${input.taskId} (${task.branchName})`);
                 try {
-                    await ctx.removeWorktree(repoPath, input, task.branchName);
+                    await ctx.removeWorktree(input.repoPath, input.taskId, task.branchName);
                 } catch (e) {
                     console.error(`[tRPC] Failed to remove worktree/branch:`, e);
                 }
             }
 
-            db.data.tasks = db.data.tasks.filter((t: Task) => t.id !== input);
+            db.data.tasks = db.data.tasks.filter((t: Task) => t.id !== input.taskId);
             await db.write();
             return { success: true };
         }),
 
     // Git Procedures
     getGitStatus: publicProcedure
-        .input(z.object({ taskId: z.string().optional() }))
-        .query(async ({ input, ctx }) => {
-            const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
-            const branch = await runGit('git branch --show-current', cwd, repoPath);
-            const status = await runGit('git status --short', cwd, repoPath);
+        .input(z.object({ repoPath: z.string(), taskId: z.string().optional() }))
+        .query(async ({ input }) => {
+            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            const branch = await runGit('git branch --show-current', cwd, input.repoPath);
+            const status = await runGit('git status --short', cwd, input.repoPath);
             return { branch, status };
         }),
     getGitDiff: publicProcedure
-        .input(z.object({ taskId: z.string().optional() }))
-        .query(async ({ input, ctx }) => {
-            const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
-            const diff = await runGit('git diff', cwd, repoPath);
+        .input(z.object({ repoPath: z.string(), taskId: z.string().optional() }))
+        .query(async ({ input }) => {
+            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            const diff = await runGit('git diff', cwd, input.repoPath);
             return { diff };
         }),
     createCommit: publicProcedure
         .input(z.object({
+            repoPath: z.string(),
             taskId: z.string().optional(),
             message: z.string(),
         }))
-        .mutation(async ({ input, ctx }) => {
-            const { repoPath } = ctx.getState();
-            const cwd = input.taskId ? path.join(repoPath, '.vibetree', 'worktrees', input.taskId) : repoPath;
-            await runGit('git add .', cwd, repoPath);
-            await runGit(`git commit -m "${input.message}"`, cwd, repoPath);
+        .mutation(async ({ input }) => {
+            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            await runGit('git add .', cwd, input.repoPath);
+            await runGit(`git commit -m "${input.message}"`, cwd, input.repoPath);
             return { success: true };
         }),
     getWorktreePath: publicProcedure
-        .input(z.object({ taskId: z.string() }))
-        .query(({ input, ctx }) => {
-            const { repoPath } = ctx.getState();
-            const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', input.taskId);
+        .input(z.object({ repoPath: z.string(), taskId: z.string() }))
+        .query(({ input }) => {
+            const worktreePath = path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId);
             return { path: worktreePath };
         }),
 

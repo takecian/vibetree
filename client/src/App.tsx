@@ -1,12 +1,140 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { TaskProvider } from './context/TaskContext';
+import { TaskProvider, useTasks } from './context/TaskContext';
 import { KanbanBoard } from './components/KanbanBoard';
-import { TaskDetail } from './components/TaskDetail';
+import { RepoModal } from './components/RepoModal';
+import { Tabs } from './components/Tabs';
 import { TerminalProvider } from './context/TerminalContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc } from './trpc';
 import { httpBatchLink } from '@trpc/client';
-import { useState } from 'react';
+import { LanguageSelector } from './components/LanguageSelector';
+import { useTranslation } from 'react-i18next';
+import { Folder, Settings } from 'lucide-react';
+import { BrowserRouter } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+
+const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
+
+function AppContent() {
+  const { t } = useTranslation();
+  const { config, updateConfig, loading } = useTasks();
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
+  const [isAddingRepo, setIsAddingRepo] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const repoPaths = (config?.repoPaths || (config?.repoPath ? [config.repoPath] : [])).map(normalizePath);
+
+  useEffect(() => {
+    if (!loading && config && !config.aiTool) {
+      setShowAiToolOnlyModal(true);
+    }
+  }, [loading, config]);
+
+  useEffect(() => {
+    if (repoPaths.length > 0) {
+      if (!activeTabId || !repoPaths.includes(activeTabId)) {
+        setActiveTabId(repoPaths[0]);
+      }
+    } else {
+      setActiveTabId(null);
+    }
+  }, [repoPaths, activeTabId]);
+
+  const handleAddRepo = async (path: string, aiTool: string, copyFiles: string) => {
+    const normalized = normalizePath(path);
+    const newPaths = [...repoPaths];
+    if (!newPaths.includes(normalized)) {
+      newPaths.push(normalized);
+      await updateConfig({ repoPaths: newPaths, aiTool, copyFiles });
+      setActiveTabId(normalized);
+    } else {
+      setActiveTabId(normalized);
+    }
+    setIsAddingRepo(false);
+  };
+
+  const handleCloseTab = async (path: string) => {
+    const newPaths = repoPaths.filter(p => p !== path);
+    await updateConfig({ repoPaths: newPaths });
+    if (activeTabId === path) {
+      setActiveTabId(newPaths[0] || null);
+    }
+  };
+
+  const tabs = repoPaths.map(path => ({
+    id: path,
+    path,
+    label: path.split(/[/\\]/).filter(Boolean).pop() || path
+  }));
+
+  if (loading) return <div className="h-screen bg-slate-900 flex items-center justify-center text-slate-400">Loading...</div>;
+
+  return (
+    <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
+      {(showAiToolOnlyModal || isAddingRepo || showSettings) && (
+        <RepoModal
+          onSave={showSettings ? (_path, aiTool, copyFiles) => {
+            updateConfig({ aiTool, copyFiles });
+            setShowSettings(false);
+          } : handleAddRepo}
+          initialConfig={config}
+          onClose={() => {
+            setShowAiToolOnlyModal(false);
+            setIsAddingRepo(false);
+            setShowSettings(false);
+          }}
+          hideRepoPath={(showAiToolOnlyModal && !isAddingRepo) || showSettings}
+        />
+      )}
+
+      <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800 shadow-lg z-10">
+        <div className="flex items-center gap-4">
+          <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{t('app.title')}</h1>
+          {activeTabId && (
+            <div className="flex items-center gap-1.5 bg-slate-700/50 text-slate-400 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-600">
+              <Folder size={12} />
+              <span>{tabs.find(t => t.id === normalizePath(activeTabId))?.label || activeTabId.split(/[/\\]/).filter(Boolean).pop()}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <LanguageSelector />
+          <button
+            onClick={() => setShowSettings(true)}
+            className="bg-transparent border-0 cursor-pointer text-slate-400 p-2 rounded-md flex items-center justify-center transition-all hover:bg-slate-700 hover:text-slate-50"
+            title={t('common.settings')}
+          >
+            <Settings size={18} />
+          </button>
+        </div>
+      </header>
+
+      <Tabs
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onTabSelect={setActiveTabId}
+        onTabClose={handleCloseTab}
+        onAddTab={() => setIsAddingRepo(true)}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {activeTabId ? (
+          <KanbanBoard repoPath={activeTabId} />
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
+            <h2 className="text-xl font-light mb-4">No Repository Open</h2>
+            <button
+              onClick={() => setIsAddingRepo(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-500 transition-colors"
+            >
+              Add a Repository to Start
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [queryClient] = useState(() => new QueryClient());
@@ -21,20 +149,17 @@ function App() {
   );
 
   return (
-    <Router>
+    <BrowserRouter>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <TerminalProvider>
             <TaskProvider>
-              <Routes>
-                <Route path="/" element={<KanbanBoard />} />
-                <Route path="/task/:id" element={<TaskDetail />} />
-              </Routes>
+              <AppContent />
             </TaskProvider>
           </TerminalProvider>
         </QueryClientProvider>
       </trpc.Provider>
-    </Router>
+    </BrowserRouter>
   );
 }
 

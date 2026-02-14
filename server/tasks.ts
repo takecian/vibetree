@@ -9,8 +9,8 @@ type EnsureTerminalForTaskFunction = (taskId: string) => Promise<void>;
 type RunAiForTaskFunction = (taskId: string) => Promise<void>;
 
 
-async function getTaskById(taskId: string): Promise<Task | undefined> {
-    const db: Low<DBData> = getDB();
+async function getTaskById(taskId: string, repoPath: string): Promise<Task | undefined> {
+    const db: Low<DBData> = getDB(repoPath);
     await db.read();
     return db.data.tasks.find((t: Task) => t.id === taskId);
 }

@@ -1,16 +1,13 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { trpc } from '../trpc';
 import { Task, AppConfig } from '../types';
 
 interface TaskContextType {
-    tasks: Task[];
     config: AppConfig | null;
     loading: boolean;
-    isConnected: boolean;
-    setRepoPath: (path: string, aiTool: string, copyFiles?: string) => Promise<void>;
-    addTask: (title: string, description: string) => Promise<Task>;
-    deleteTask: (taskId: string) => Promise<void>;
-    refreshTasks: () => void;
+    updateConfig: (updates: Partial<AppConfig>) => Promise<void>;
+    addTask: (repoPath: string, title: string, description: string) => Promise<Task>;
+    deleteTask: (repoPath: string, taskId: string) => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -24,15 +21,11 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
     // Queries
     const { data: config = null, isLoading: configLoading } = trpc.getConfig.useQuery();
-    const { data: tasks = [], isLoading: tasksLoading, refetch: refreshTasks } = trpc.getTasks.useQuery(undefined, {
-        enabled: !!config?.repoPath,
-    });
 
     // Mutations
     const updateConfigMutation = trpc.updateConfig.useMutation({
         onSuccess: (newConfig) => {
             utils.getConfig.setData(undefined, newConfig);
-            utils.getTasks.invalidate();
         }
     });
 
@@ -41,38 +34,30 @@ export function TaskProvider({ children }: TaskProviderProps) {
             utils.getTasks.invalidate();
         }
     });
-
     const deleteTaskMutation = trpc.deleteTask.useMutation({
         onSuccess: () => {
             utils.getTasks.invalidate();
         }
     });
 
-    const setRepoPath = async (path: string, aiTool: string, copyFiles?: string) => {
-        await updateConfigMutation.mutateAsync({
-            repoPath: path,
-            aiTool: aiTool || config?.aiTool || 'claude',
-            copyFiles: copyFiles !== undefined ? copyFiles : config?.copyFiles ?? ''
-        });
+    const updateConfig = async (updates: Partial<AppConfig>) => {
+        await updateConfigMutation.mutateAsync(updates);
     };
 
-    const addTask = async (title: string, description: string): Promise<Task> => {
-        return await createTaskMutation.mutateAsync({ title, description });
+    const addTask = async (repoPath: string, title: string, description: string): Promise<Task> => {
+        return await createTaskMutation.mutateAsync({ repoPath, title, description });
     };
 
-    const deleteTask = async (taskId: string) => {
-        await deleteTaskMutation.mutateAsync(taskId);
+    const deleteTask = async (repoPath: string, taskId: string) => {
+        await deleteTaskMutation.mutateAsync({ repoPath, taskId });
     };
 
     const contextValue: TaskContextType = {
-        tasks,
         config,
-        loading: configLoading || tasksLoading,
-        isConnected: !!config?.repoPath,
-        setRepoPath,
+        loading: configLoading,
+        updateConfig,
         addTask,
         deleteTask,
-        refreshTasks: () => { refreshTasks(); }
     };
 
     return (

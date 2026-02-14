@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { getTaskById } from './tasks';
-import { initDB } from './db';
+import { initDB, clearDBs } from './db';
 import { Task } from './types';
 
 describe('tasks', () => {
@@ -23,17 +23,18 @@ describe('tasks', () => {
     if (fs.existsSync(testRepoPath)) {
       fs.rmSync(testRepoPath, { recursive: true, force: true });
     }
+    clearDBs();
   });
 
   describe('getTaskById', () => {
     it('should return undefined when task does not exist', async () => {
-      const task = await getTaskById('non-existent-id');
-      
+      const task = await getTaskById('non-existent-id', testRepoPath);
+
       expect(task).toBeUndefined();
     });
 
     it('should return task when it exists', async () => {
-      const db = (await import('./db')).getDB();
+      const db = (await import('./db')).getDB(testRepoPath);
       await db.read();
 
       const testTask: Task = {
@@ -47,8 +48,8 @@ describe('tasks', () => {
       db.data.tasks.push(testTask);
       await db.write();
 
-      const task = await getTaskById('task-123');
-      
+      const task = await getTaskById('task-123', testRepoPath);
+
       expect(task).toBeDefined();
       expect(task?.id).toBe('task-123');
       expect(task?.title).toBe('Test Task');
@@ -56,7 +57,7 @@ describe('tasks', () => {
     });
 
     it('should return the correct task when multiple tasks exist', async () => {
-      const db = (await import('./db')).getDB();
+      const db = (await import('./db')).getDB(testRepoPath);
       await db.read();
 
       const tasks: Task[] = [
@@ -86,20 +87,20 @@ describe('tasks', () => {
       db.data.tasks = tasks;
       await db.write();
 
-      const task = await getTaskById('task-2');
-      
+      const task = await getTaskById('task-2', testRepoPath);
+
       expect(task?.id).toBe('task-2');
       expect(task?.title).toBe('Second Task');
     });
 
     it('should handle empty database', async () => {
-      const task = await getTaskById('any-id');
-      
+      const task = await getTaskById('any-id', testRepoPath);
+
       expect(task).toBeUndefined();
     });
 
     it('should refresh data from disk', async () => {
-      const db = (await import('./db')).getDB();
+      const db = (await import('./db')).getDB(testRepoPath);
       await db.read();
 
       const testTask: Task = {
@@ -114,8 +115,8 @@ describe('tasks', () => {
       await db.write();
 
       // Call getTaskById which should read from disk
-      const task = await getTaskById('task-refresh');
-      
+      const task = await getTaskById('task-refresh', testRepoPath);
+
       expect(task).toBeDefined();
       expect(task?.id).toBe('task-refresh');
     });

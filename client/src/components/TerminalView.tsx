@@ -4,15 +4,16 @@ import 'xterm/css/xterm.css';
 
 interface TerminalViewProps {
     taskId: string;
+    repoPath: string;
 }
 
-export function TerminalView({ taskId }: TerminalViewProps) {
+export function TerminalView({ taskId, repoPath }: TerminalViewProps) {
     const terminalRef = useRef<HTMLDivElement>(null);
     const { getTerminalSession } = useTerminals();
     const sessionRef = useRef<any>(null);
 
     useEffect(() => {
-        const session = getTerminalSession(taskId);
+        const session = getTerminalSession(taskId, repoPath);
         sessionRef.current = session;
         const { terminal, fitAddon, socket } = session;
 

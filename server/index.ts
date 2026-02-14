@@ -62,7 +62,14 @@ app.use(
 
 // Initialize modules
 if (STATE.repoPath) {
-    initDB(STATE.repoPath).catch(err => console.error("Failed to init DB:", err));
+    initDB(STATE.repoPath).then(async (db) => {
+        console.log(`[Server] DB initialized. Auto-spawning terminals...`);
+        if (db.data?.tasks) {
+            for (const task of db.data.tasks) {
+                await ensureTerminalForTask(task.id);
+            }
+        }
+    }).catch(err => console.error("Failed to init DB:", err));
 }
 
 // Setup legacy REST Routes (Disabled - using tRPC instead)

@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { loadConfig, saveConfig } from './config';
-import { AppConfig } from './types';
+import { loadConfig, saveConfig } from '../src/config';
+import { AppConfig } from '../src/types';
 
 // Mock the config file path
 const mockConfigPath = path.join(os.homedir(), '.vibetree_config.json');

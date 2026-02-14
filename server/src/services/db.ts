@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
-import { Repository, Task } from './types';
+import { Repository, Task } from '../types';
 
 const VIBE_DIR = path.join(os.homedir(), '.vibetree');
 const DB_PATH = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(VIBE_DIR, 'vibetree.db');

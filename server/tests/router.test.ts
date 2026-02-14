@@ -4,10 +4,10 @@ import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
-import { appRouter } from './router';
-import { addRepository, getTasks, createTask, getTaskById, clearDB, normalizePath } from './db';
-import { Repository, Task, AppConfig } from './types';
-import { Context } from './trpc';
+import { appRouter } from '../src/api/router';
+import { addRepository, getTasks, createTask, getTaskById, clearDB, normalizePath } from '../src/services/db';
+import { Repository, Task, AppConfig } from '../src/types';
+import { Context } from '../src/api/trpc';
 
 const execAsync = util.promisify(exec);
 

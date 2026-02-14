@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { Server, Socket } from 'socket.io';
-import { Task, AppConfig } from './types';
+import { Task, AppConfig } from '../types';
 
 type GetTaskByIdFunction = (taskId: string, repoPath: string) => Promise<Task | undefined>;
 

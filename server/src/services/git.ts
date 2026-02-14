@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import util from 'util';
 import { Request, Response, Application } from 'express';
-import { AppConfig } from './types'; // Assuming AppConfig is defined in types.ts
+import { AppConfig } from '../types'; // Assuming AppConfig is defined in types.ts
 
 const execAsync = util.promisify(exec);
 

@@ -7,16 +7,16 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
-import { setupTerminal } from './terminal';
-import { createWorktree } from './git';
-import { getTaskById } from './tasks';
-import { initDB } from './db';
+import { setupTerminal } from './services/terminal';
+import { createWorktree } from './services/git';
+import { getTaskById } from './services/tasks';
+import { initDB } from './services/db';
 import fs from 'fs';
 import { AppConfig } from './types';
 import { loadConfig, saveConfig } from './config';
 import * as trpcExpress from '@trpc/server/adapters/express';
-import { appRouter } from './router';
-import { Context } from './trpc';
+import { appRouter } from './api/router';
+import { Context } from './api/trpc';
 
 // Extend the Express Request type to include appState
 declare global {
@@ -56,14 +56,14 @@ app.use(
             createWorktree: (repoPath, taskId, branchName) => createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
             ensureTerminalForTask: (taskId, repoPath) => ensureTerminalForTask(taskId, repoPath),
             runAiForTask: (taskId, repoPath) => runAiForTask(taskId, repoPath),
-            removeWorktree: (repoPath, taskId, branchName) => import('./git').then(m => m.removeWorktree(repoPath, taskId, branchName)),
+            removeWorktree: (repoPath, taskId, branchName) => import('./services/git').then(m => m.removeWorktree(repoPath, taskId, branchName)),
             shutdownTerminalForTask,
         }),
     })
 );
 
 // Initialize modules
-import { getRepositories, getTasks } from './db';
+import { getRepositories, getTasks } from './services/db';
 
 const repos = getRepositories();
 for (const repo of repos) {

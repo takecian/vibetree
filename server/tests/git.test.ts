@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
-import { runGit, createWorktree } from './git';
+import { runGit, createWorktree } from '../src/services/git';
 
 const execAsync = util.promisify(exec);
 
@@ -20,7 +20,7 @@ describe('git', () => {
     await execAsync('git init', { cwd: testRepoPath });
     await execAsync('git config user.email "test@example.com"', { cwd: testRepoPath });
     await execAsync('git config user.name "Test User"', { cwd: testRepoPath });
-    
+
     // Create an initial commit
     const testFile = path.join(testRepoPath, 'test.txt');
     fs.writeFileSync(testFile, 'initial content');
@@ -38,7 +38,7 @@ describe('git', () => {
   describe('runGit', () => {
     it('should execute git command and return stdout', async () => {
       const result = await runGit('git branch --show-current', testRepoPath, testRepoPath);
-      
+
       // Git default branch can be 'master' or 'main' depending on Git version
       expect(['master', 'main']).toContain(result);
     });
@@ -57,7 +57,7 @@ describe('git', () => {
 
     it('should use working directory parameter', async () => {
       const result = await runGit('git status --short', testRepoPath, testRepoPath);
-      
+
       expect(result).toBe('');
     });
 
@@ -67,7 +67,7 @@ describe('git', () => {
       fs.writeFileSync(newFile, 'new content');
 
       const result = await runGit('git status --short', testRepoPath, testRepoPath);
-      
+
       expect(result).toContain('newfile.txt');
     });
   });
@@ -103,7 +103,7 @@ describe('git', () => {
 
       const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
       const { stdout } = await execAsync('git branch --show-current', { cwd: worktreePath });
-      
+
       expect(stdout.trim()).toBe(branchName);
     });
 
@@ -116,7 +116,7 @@ describe('git', () => {
     it('should copy files to worktree when copyFiles is provided', async () => {
       const taskId = 'test-task-4';
       const branchName = 'feature/test4';
-      
+
       // Create a file to copy
       const sourceFile = path.join(testRepoPath, '.env');
       fs.writeFileSync(sourceFile, 'TEST=value');
@@ -125,7 +125,7 @@ describe('git', () => {
 
       const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
       const copiedFile = path.join(worktreePath, '.env');
-      
+
       expect(fs.existsSync(copiedFile)).toBe(true);
       expect(fs.readFileSync(copiedFile, 'utf8')).toBe('TEST=value');
     });
@@ -133,7 +133,7 @@ describe('git', () => {
     it('should handle multiple files in copyFiles parameter', async () => {
       const taskId = 'test-task-5';
       const branchName = 'feature/test5';
-      
+
       // Create files to copy
       fs.writeFileSync(path.join(testRepoPath, '.env'), 'ENV=test');
       fs.writeFileSync(path.join(testRepoPath, 'config.json'), '{"test": true}');
@@ -141,7 +141,7 @@ describe('git', () => {
       await createWorktree(testRepoPath, taskId, branchName, '.env\nconfig.json');
 
       const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
-      
+
       expect(fs.existsSync(path.join(worktreePath, '.env'))).toBe(true);
       expect(fs.existsSync(path.join(worktreePath, 'config.json'))).toBe(true);
     });
@@ -152,9 +152,9 @@ describe('git', () => {
 
       // Should not throw error, just skip the file
       const result = await createWorktree(
-        testRepoPath, 
-        taskId, 
-        branchName, 
+        testRepoPath,
+        taskId,
+        branchName,
         'nonexistent.txt'
       );
 
@@ -164,7 +164,7 @@ describe('git', () => {
     it('should skip copying directories', async () => {
       const taskId = 'test-task-7';
       const branchName = 'feature/test7';
-      
+
       // Create a directory
       const dirPath = path.join(testRepoPath, 'somedir');
       fs.mkdirSync(dirPath);

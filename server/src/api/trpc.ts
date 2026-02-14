@@ -1,5 +1,5 @@
 import { initTRPC } from '@trpc/server';
-import { AppConfig } from './types';
+import { AppConfig } from '../types';
 
 export interface Context {
     getState: () => AppConfig;

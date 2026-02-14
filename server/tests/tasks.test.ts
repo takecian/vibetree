@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getTaskById } from './tasks';
-import { addRepository, createTask as createTaskInDB, clearDB } from './db';
+import { getTaskById } from '../src/services/tasks';
+import { addRepository, createTask as createTaskInDB, clearDB } from '../src/services/db';
 
 describe('tasks', () => {
   const testRepoPath = '/test/repo';

@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
 import { v4 as uuidv4 } from 'uuid';
-import { Task } from './types';
-import { createWorktree, runGit } from './git';
+import { Task } from '../types';
+import { createWorktree, runGit } from '../services/git';
 import { exec } from 'child_process';
 import util from 'util';
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
-import { saveConfig } from './config';
+import { saveConfig } from '../config';
 import {
     getRepositories,
     getRepositoryByPath,
@@ -19,7 +19,7 @@ import {
     updateTask,
     deleteTask,
     normalizePath
-} from './db';
+} from '../services/db';
 
 const execAsync = util.promisify(exec);
 
@@ -52,7 +52,7 @@ export const appRouter = router({
                 // Update copyFiles for active repo if it exists
                 const repo = getRepositoryByPath(state.repoPath);
                 if (repo) {
-                    const { updateRepository } = await import('./db');
+                    const { updateRepository } = await import('../services/db');
                     updateRepository(repo.id, { copyFiles: input.copyFiles });
                 }
             }

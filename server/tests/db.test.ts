@@ -7,7 +7,7 @@ import {
   createTask,
   clearDB,
   normalizePath
-} from './db';
+} from '../src/services/db';
 
 describe('db', () => {
   beforeEach(() => {

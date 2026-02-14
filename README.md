@@ -88,6 +88,24 @@ The app will start and automatically open in your default browser at `http://loc
     - **review**: Check the **Diff** tab to see your changes in the worktree.
     - **Commit**: (Planned) Commit your changes directly from the UI.
 
+## Working with Multiple Repositories
+
+Vibetree is designed to work with one repository at a time. However, you can easily work with multiple repositories by running separate Vibetree instances.
+
+There are two ways to specify the repository:
+
+1.  **Navigate and Launch**: Open your terminal, `cd` into your project's directory, and run `npx vibetree`.
+    ```bash
+    cd /path/to/my-other-project
+    npx vibetree
+    ```
+2.  **Use the `--repo` flag**: Launch Vibetree with the `--repo` flag to specify the target directory directly.
+    ```bash
+    npx vibetree --repo /path/to/my-other-project
+    ```
+
+Each new instance will automatically run on a different port, allowing you to manage tasks for multiple projects at the same time.
+
 ## Project Structure
 
 -   `client/`: React frontend (Vite) - TypeScript with `.tsx` components.

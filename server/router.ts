@@ -105,9 +105,26 @@ export const appRouter = router({
         }),
     deleteTask: publicProcedure
         .input(z.string())
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const db = getDB();
             await db.read();
+            const task = db.data.tasks.find((t: Task) => t.id === input);
+
+            // Cleanup side effects
+            const { repoPath } = ctx.getState();
+            if (ctx.shutdownTerminalForTask) {
+                console.log(`[tRPC] Shutting down terminal for task ${input}`);
+                await ctx.shutdownTerminalForTask(input);
+            }
+            if (repoPath && ctx.removeWorktree && task) {
+                console.log(`[tRPC] Removing worktree and branch for task ${input} (${task.branchName})`);
+                try {
+                    await ctx.removeWorktree(repoPath, input, task.branchName);
+                } catch (e) {
+                    console.error(`[tRPC] Failed to remove worktree/branch:`, e);
+                }
+            }
+
             db.data.tasks = db.data.tasks.filter((t: Task) => t.id !== input);
             await db.write();
             return { success: true };

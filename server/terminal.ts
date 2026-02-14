@@ -164,7 +164,20 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
         });
     });
 
-    return { ensureTerminalForTask, runAiForTask };
+    async function shutdownTerminalForTask(taskId: string): Promise<void> {
+        const session = sessions[taskId];
+        if (!session) return;
+
+        console.log(`[Terminal] Shutting down terminal for task ${taskId}`);
+        try {
+            session.pty.kill();
+        } catch (e) {
+            console.error(`[Terminal] Error killing PTY for task ${taskId}:`, e);
+        }
+        delete sessions[taskId];
+    }
+
+    return { ensureTerminalForTask, runAiForTask, shutdownTerminalForTask };
 }
 
 export { setupTerminal };

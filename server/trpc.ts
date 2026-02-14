@@ -6,6 +6,8 @@ export interface Context {
     createWorktree?: (repoPath: string, taskId: string, branchName: string) => Promise<any>;
     ensureTerminalForTask?: (taskId: string) => Promise<void>;
     runAiForTask?: (taskId: string) => Promise<void>;
+    removeWorktree?: (repoPath: string, taskId: string, branchName?: string) => Promise<any>;
+    shutdownTerminalForTask?: (taskId: string) => Promise<void>;
 }
 
 const t = initTRPC.context<Context>().create();

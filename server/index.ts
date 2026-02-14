@@ -38,7 +38,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 // Setup helpers and routes
-const { ensureTerminalForTask, runAiForTask } = setupTerminal(io, () => STATE, getTaskById);
+const { ensureTerminalForTask, runAiForTask, shutdownTerminalForTask } = setupTerminal(io, () => STATE, getTaskById);
 
 // Middleware to inject current state
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -56,6 +56,8 @@ app.use(
             createWorktree: (repoPath, taskId, branchName) => createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
             ensureTerminalForTask,
             runAiForTask,
+            removeWorktree: (repoPath, taskId, branchName) => import('./git').then(m => m.removeWorktree(repoPath, taskId, branchName)),
+            shutdownTerminalForTask,
         }),
     })
 );

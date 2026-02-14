@@ -80,4 +80,29 @@ async function createWorktree(
     }
 }
 
-export { createWorktree, runGit };
+async function removeWorktree(repoPath: string, taskId: string, branchName?: string): Promise<{ success: boolean; message?: string }> {
+    if (!repoPath) throw new Error("Repository not selected");
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+
+    try {
+        if (fs.existsSync(worktreePath)) {
+            await execAsync(`git worktree remove --force "${worktreePath}"`, { cwd: repoPath });
+            console.log(`[Git] Removed worktree at ${worktreePath}`);
+        }
+
+        if (branchName) {
+            try {
+                await execAsync(`git branch -D "${branchName}"`, { cwd: repoPath });
+                console.log(`[Git] Deleted branch ${branchName}`);
+            } catch (branchErr: any) {
+                console.warn(`[Git] Failed to delete branch ${branchName}: ${branchErr.message}`);
+            }
+        }
+        return { success: true };
+    } catch (e: any) {
+        console.error("Worktree/Branch removal failed:", e);
+        throw e;
+    }
+}
+
+export { createWorktree, runGit, removeWorktree };

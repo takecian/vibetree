@@ -10,12 +10,19 @@ const argv = yargs(hideBin(process.argv)).argv;
 
 async function verifyNativeModules(pkgRoot) {
     try {
-        require(require.resolve('node-pty', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] }));
-        require(require.resolve('better-sqlite3', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] }));
+        const ptyPath = require.resolve('node-pty', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] });
+        const sqlitePath = require.resolve('better-sqlite3', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] });
+        require(ptyPath);
+        require(sqlitePath);
     } catch (e) {
-        if (e.code === 'ERR_DLOPEN_FAILED' || (e.message && e.message.includes('Node.js version'))) {
-            console.log('\x1b[33m%s\x1b[0m', 'Binary mismatch detected. Rebuilding native modules for your Node.js version...');
+        const isMismatch = e.code === 'ERR_DLOPEN_FAILED' || (e.message && e.message.includes('Node.js version'));
+        const isMissing = e.code === 'MODULE_NOT_FOUND';
+
+        if (isMismatch || isMissing) {
+            console.log('\x1b[33m%s\x1b[0m', isMissing ? 'Native modules missing. Installing/Building...' : 'Binary mismatch detected. Rebuilding native modules for your Node.js version...');
             spawnSync('npm', ['rebuild', 'node-pty', 'better-sqlite3'], { cwd: pkgRoot, stdio: 'inherit', shell: true });
+        } else {
+            console.error('Error verifying native modules:', e.message);
         }
     }
 }

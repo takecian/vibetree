@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTasks } from '../context/TaskContext';
 import { RepoModal } from './RepoModal';
 import { CreateTaskModal } from './CreateTaskModal';
@@ -9,6 +10,7 @@ import { Task, AppConfig } from '../types'; // Import Task and AppConfig interfa
 
 export function KanbanBoard() {
     // We no longer need moveTask or onDragEnd for the board layout
+    const { t } = useTranslation();
     const { tasks, addTask, isConnected, config, setRepoPath } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -27,10 +29,10 @@ export function KanbanBoard() {
 
     // Extract repo name from path (handle trailing slash and Windows backslashes)
     const repoName: string = (() => {
-        if (!config?.repoPath || !config.repoPath.trim()) return 'No Repository';
+        if (!config?.repoPath || !config.repoPath.trim()) return t('common.noRepository');
         const normalized = config.repoPath.replace(/[/\\]+$/, '');
         const segment = normalized.split(/[/\\]/).filter(Boolean).pop();
-        return segment || normalized || 'No Repository';
+        return segment || normalized || t('common.noRepository');
     })();
 
     const handleSaveConfig = async (path: string, aiTool: string, copyFiles: string) => {
@@ -58,7 +60,7 @@ export function KanbanBoard() {
 
             <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800 shadow-lg z-10">
                 <div className="flex items-center gap-4">
-                    <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Vibetree</h1>
+                    <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{t('app.title')}</h1>
                     {(isConnected || (config?.repoPath && config.repoPath.trim())) && (
                         <div className="flex items-center gap-1.5 bg-slate-700/50 text-slate-400 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-600">
                             <Folder size={12} />
@@ -70,7 +72,7 @@ export function KanbanBoard() {
                     <button
                         onClick={() => setShowSettings(true)}
                         className="bg-transparent border-0 cursor-pointer text-slate-400 p-2 rounded-md flex items-center justify-center transition-all hover:bg-slate-700 hover:text-slate-50"
-                        title="Settings"
+                        title={t('common.settings')}
                     >
                         <Settings size={18} />
                     </button>
@@ -79,7 +81,7 @@ export function KanbanBoard() {
                         className="flex items-center gap-1.5 bg-blue-600 text-white border-0 px-4 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed shadow-sm"
                         disabled={!isConnected}
                     >
-                        <Plus size={14} /> New Task
+                        <Plus size={14} /> {t('header.newTask')}
                     </button>
                 </div>
             </header>
@@ -88,12 +90,12 @@ export function KanbanBoard() {
                 {/* Task List Sidebar */}
                 <div className="w-80 flex flex-col border-r border-slate-700 bg-slate-800/40 backdrop-blur-sm overflow-hidden">
                     <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">All Tasks ({tasks.length})</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t('taskList.title')} ({tasks.length})</span>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
                         {tasks.length === 0 ? (
                             <div className="p-8 text-center text-slate-500 text-sm">
-                                No tasks found. Create one to get started.
+                                {t('taskList.empty')}
                             </div>
                         ) : (
                             tasks.map((task: Task) => (

@@ -63,17 +63,15 @@ app.use(
 );
 
 // Initialize modules
-const repoPaths = STATE.repoPaths || (STATE.repoPath ? [STATE.repoPath] : []);
-for (const repoPath of repoPaths) {
-    if (repoPath) {
-        initDB(repoPath).then(async (db) => {
-            console.log(`[Server] DB initialized for ${repoPath}. Auto-spawning terminals...`);
-            if (db.data?.tasks) {
-                for (const task of db.data.tasks) {
-                    await ensureTerminalForTask(task.id, repoPath);
-                }
-            }
-        }).catch(err => console.error(`Failed to init DB for ${repoPath}:`, err));
+import { getRepositories, getTasks } from './db';
+
+const repos = getRepositories();
+for (const repo of repos) {
+    if (repo.path) {
+        console.log(`[Server] Restoring terminals for repository: ${repo.path}`);
+        getTasks(repo.id).forEach(async (task) => {
+            await ensureTerminalForTask(task.id, repo.path);
+        });
     }
 }
 

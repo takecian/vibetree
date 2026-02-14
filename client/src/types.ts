@@ -1,7 +1,14 @@
 // client/src/types.ts
 
+export interface Repository {
+    id: string;
+    path: string;
+    copyFiles?: string;
+}
+
 export interface Task {
     id: string;
+    repositoryId: string;
     title: string;
     description: string;
     createdAt: string;
@@ -10,7 +17,6 @@ export interface Task {
 
 export interface AppConfig {
     repoPath: string;
-    repoPaths?: string[];
     aiTool: string;
     /** Newline-separated file paths (relative to repo or absolute) to copy into each worktree */
     copyFiles?: string;

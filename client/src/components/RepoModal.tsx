@@ -9,9 +9,11 @@ interface RepoModalProps {
     initialConfig: AppConfig | null;
     onClose?: () => void;
     hideRepoPath?: boolean;
+    hideAiAssistant?: boolean;
+    hideCopyFiles?: boolean;
 }
 
-export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath }: RepoModalProps) {
+export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAiAssistant, hideCopyFiles }: RepoModalProps) {
     const { t } = useTranslation();
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
@@ -52,7 +54,7 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath }: Repo
         setAiTool(e.target.value);
     };
 
-    const getToolOptionClasses = (tool: string, isSelected: boolean, isAvailable: boolean) => {
+    const getToolOptionClasses = (isSelected: boolean, isAvailable: boolean) => {
         const baseClasses = 'flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all relative gap-2';
         if (!isAvailable) {
             return `${baseClasses} border-slate-600 bg-slate-800 opacity-50 cursor-not-allowed`;
@@ -94,43 +96,47 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath }: Repo
                         </div>
                     )}
 
-                    <div className="mb-6">
-                        <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiAssistant')}</label>
-                        <div className="grid grid-cols-3 gap-3">
-                            {['claude', 'codex', 'gemini'].map(tool => {
-                                const isAvailable = !!availableTools[tool as keyof typeof availableTools];
-                                const isSelected = aiTool === tool;
-                                return (
-                                    <label key={tool} className={getToolOptionClasses(tool, isSelected, isAvailable)}>
-                                        <input
-                                            type="radio"
-                                            name="aiTool"
-                                            value={tool}
-                                            checked={isSelected}
-                                            onChange={handleAiToolChange}
-                                            disabled={!isAvailable}
-                                            className="hidden"
-                                        />
-                                        <span className="font-medium capitalize">{tool}</span>
-                                        {isAvailable ? <span className="text-green-500 text-[10px]">●</span> : <span className="text-slate-400 text-[10px]">○</span>}
-                                    </label>
-                                );
-                            })}
+                    {!hideAiAssistant && (
+                        <div className="mb-6">
+                            <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiAssistant')}</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {['claude', 'codex', 'gemini'].map(tool => {
+                                    const isAvailable = !!availableTools[tool as keyof typeof availableTools];
+                                    const isSelected = aiTool === tool;
+                                    return (
+                                        <label key={tool} className={getToolOptionClasses(isSelected, isAvailable)}>
+                                            <input
+                                                type="radio"
+                                                name="aiTool"
+                                                value={tool}
+                                                checked={isSelected}
+                                                onChange={handleAiToolChange}
+                                                disabled={!isAvailable}
+                                                className="hidden"
+                                            />
+                                            <span className="font-medium capitalize">{tool}</span>
+                                            {isAvailable ? <span className="text-green-500 text-[10px]">●</span> : <span className="text-slate-400 text-[10px]">○</span>}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            {checkingTools && <span className="text-xs text-slate-400 mt-2 block">{t('repoModal.checkingTools')}</span>}
                         </div>
-                        {checkingTools && <span className="text-xs text-slate-400 mt-2 block">{t('repoModal.checkingTools')}</span>}
-                    </div>
+                    )}
 
-                    <div className="mb-6">
-                        <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.copyFiles')}</label>
-                        <textarea
-                            value={copyFiles}
-                            onChange={(e) => setCopyFiles(e.target.value)}
-                            placeholder={t('repoModal.copyFilesPlaceholder')}
-                            rows={3}
-                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y"
-                        />
-                        <p className="text-xs text-slate-400 mt-1">{t('repoModal.copyFilesHelp')}</p>
-                    </div>
+                    {!hideCopyFiles && (
+                        <div className="mb-6">
+                            <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.copyFiles')}</label>
+                            <textarea
+                                value={copyFiles}
+                                onChange={(e) => setCopyFiles(e.target.value)}
+                                placeholder={t('repoModal.copyFilesPlaceholder')}
+                                rows={3}
+                                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">{t('repoModal.copyFilesHelp')}</p>
+                        </div>
+                    )}
 
                     <div className="flex gap-3 mt-6">
                         {onClose && (

@@ -8,7 +8,18 @@ import util from 'util';
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
-import { saveConfig, loadConfig } from './config';
+import { saveConfig } from './config';
+import {
+    getRepositories,
+    getRepositoryByPath,
+    addRepository,
+    getTasks,
+    getTaskById,
+    createTask,
+    updateTask,
+    deleteTask,
+    normalizePath
+} from './db';
 
 const execAsync = util.promisify(exec);
 
@@ -20,7 +31,6 @@ export const appRouter = router({
     updateConfig: publicProcedure
         .input(z.object({
             repoPath: z.string().optional(),
-            repoPaths: z.array(z.string()).optional(),
             aiTool: z.string().optional(),
             copyFiles: z.string().optional(),
         }))
@@ -30,32 +40,44 @@ export const appRouter = router({
                 if (input.repoPath && !fs.existsSync(input.repoPath)) {
                     throw new Error('Path does not exist');
                 }
-                state.repoPath = input.repoPath || '';
-            }
-            if (input.repoPaths !== undefined) {
-                state.repoPaths = input.repoPaths;
-                // Initialize any new DBs
-                const { initDB } = await import('./db');
-                for (const p of input.repoPaths) {
-                    if (p && fs.existsSync(p)) {
-                        await initDB(p);
-                    }
+                const normalized = normalizePath(input.repoPath || '');
+                state.repoPath = normalized;
+                if (normalized) {
+                    addRepository(normalized, input.copyFiles);
                 }
             }
             if (input.aiTool !== undefined) state.aiTool = input.aiTool;
-            if (input.copyFiles !== undefined) state.copyFiles = input.copyFiles;
+            if (input.copyFiles !== undefined) {
+                state.copyFiles = input.copyFiles;
+                // Update copyFiles for active repo if it exists
+                const repo = getRepositoryByPath(state.repoPath);
+                if (repo) {
+                    const { updateRepository } = await import('./db');
+                    updateRepository(repo.id, { copyFiles: input.copyFiles });
+                }
+            }
 
             await saveConfig(state);
             return state;
+        }),
+
+    getRepositories: publicProcedure.query(async () => {
+        return getRepositories();
+    }),
+
+    addRepository: publicProcedure
+        .input(z.object({ path: z.string(), copyFiles: z.string().optional() }))
+        .mutation(async ({ input }) => {
+            return addRepository(input.path, input.copyFiles);
         }),
 
     // Task Procedures
     getTasks: publicProcedure
         .input(z.object({ repoPath: z.string() }))
         .query(async ({ input }) => {
-            const { initDB } = await import('./db');
-            const db = await initDB(input.repoPath);
-            return db.data.tasks;
+            const repo = getRepositoryByPath(input.repoPath);
+            if (!repo) return [];
+            return getTasks(repo.id);
         }),
     createTask: publicProcedure
         .input(z.object({
@@ -64,17 +86,16 @@ export const appRouter = router({
             description: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const { initDB } = await import('./db');
-            const db = await initDB(input.repoPath);
-            const newTask: Task = {
-                id: uuidv4(),
+            let repo = getRepositoryByPath(input.repoPath);
+            if (!repo) {
+                repo = addRepository(input.repoPath);
+            }
+
+            const newTask = createTask(repo.id, {
                 title: input.title,
                 description: input.description || '',
-                createdAt: new Date().toISOString(),
                 branchName: `feature/task-${Date.now()}`
-            };
-            db.data.tasks.push(newTask);
-            await db.write();
+            });
 
             // Handle side effects (worktree, terminal, AI)
             if (input.repoPath && ctx.createWorktree && ctx.ensureTerminalForTask && ctx.runAiForTask) {
@@ -104,30 +125,22 @@ export const appRouter = router({
             }),
         }))
         .mutation(async ({ input }) => {
-            const { initDB } = await import('./db');
-            const db = await initDB(input.repoPath);
-            const taskIndex = db.data.tasks.findIndex((t: Task) => t.id === input.id);
-            if (taskIndex > -1) {
-                db.data.tasks[taskIndex] = { ...db.data.tasks[taskIndex], ...input.updates };
-                await db.write();
-                return db.data.tasks[taskIndex];
-            } else {
-                throw new Error('Task not found');
-            }
+            const task = getTaskById(input.id);
+            if (!task) throw new Error('Task not found');
+            return updateTask(input.id, input.updates);
         }),
     deleteTask: publicProcedure
         .input(z.object({ repoPath: z.string(), taskId: z.string() }))
         .mutation(async ({ input, ctx }) => {
-            const { initDB } = await import('./db');
-            const db = await initDB(input.repoPath);
-            const task = db.data.tasks.find((t: Task) => t.id === input.taskId);
+            const task = getTaskById(input.taskId);
+            if (!task) throw new Error('Task not found');
 
             // Cleanup side effects
             if (ctx.shutdownTerminalForTask) {
                 console.log(`[tRPC] Shutting down terminal for task ${input.taskId}`);
                 await ctx.shutdownTerminalForTask(input.taskId);
             }
-            if (input.repoPath && ctx.removeWorktree && task) {
+            if (input.repoPath && ctx.removeWorktree) {
                 console.log(`[tRPC] Removing worktree and branch for task ${input.taskId} (${task.branchName})`);
                 try {
                     await ctx.removeWorktree(input.repoPath, input.taskId, task.branchName);
@@ -136,8 +149,7 @@ export const appRouter = router({
                 }
             }
 
-            db.data.tasks = db.data.tasks.filter((t: Task) => t.id !== input.taskId);
-            await db.write();
+            deleteTask(input.taskId);
             return { success: true };
         }),
 

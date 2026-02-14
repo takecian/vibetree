@@ -1,122 +1,74 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { initDB, getDB, clearDBs } from './db';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  getRepositories,
+  getRepositoryByPath,
+  addRepository,
+  getTasks,
+  createTask,
+  clearDB,
+  normalizePath
+} from './db';
 
 describe('db', () => {
-  let testRepoPath: string;
-
   beforeEach(() => {
-    // Create a temporary directory for testing
-    testRepoPath = path.join(os.tmpdir(), `vibetree-test-${Date.now()}`);
-    fs.mkdirSync(testRepoPath, { recursive: true });
+    clearDB();
   });
 
   afterEach(() => {
-    // Clean up test directory
-    if (fs.existsSync(testRepoPath)) {
-      fs.rmSync(testRepoPath, { recursive: true, force: true });
-    }
-    clearDBs();
+    clearDB();
   });
 
-  describe('initDB', () => {
-    it('should create .vibetree directory if it does not exist', async () => {
-      await initDB(testRepoPath);
+  describe('Repository Operations', () => {
+    it('should add and retrieve a repository', () => {
+      const repo = addRepository('/test/repo');
+      expect(repo.path).toBe('/test/repo');
 
-      const vibeDir = path.join(testRepoPath, '.vibetree');
-      expect(fs.existsSync(vibeDir)).toBe(true);
+      const all = getRepositories();
+      expect(all).toHaveLength(1);
+      expect(all[0].path).toBe('/test/repo');
     });
 
-    it('should create db.json file', async () => {
-      await initDB(testRepoPath);
-
-      const dbFile = path.join(testRepoPath, '.vibetree', 'db.json');
-      expect(fs.existsSync(dbFile)).toBe(true);
+    it('should normalize paths on add', () => {
+      addRepository('/test/repo/');
+      const repo = getRepositoryByPath('/test/repo');
+      expect(repo).toBeDefined();
+      expect(repo?.path).toBe('/test/repo');
     });
 
-    it('should initialize db with empty tasks array', async () => {
-      await initDB(testRepoPath);
-
-      const dbFile = path.join(testRepoPath, '.vibetree', 'db.json');
-      const dbContent = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
-      expect(dbContent).toEqual({ tasks: [] });
-    });
-
-    it('should work if .vibetree directory already exists', async () => {
-      const vibeDir = path.join(testRepoPath, '.vibetree');
-      fs.mkdirSync(vibeDir);
-
-      await initDB(testRepoPath);
-
-      const dbFile = path.join(vibeDir, 'db.json');
-      expect(fs.existsSync(dbFile)).toBe(true);
-    });
-
-    it('should return a Low database instance', async () => {
-      const db = await initDB(testRepoPath);
-
-      expect(db).toBeDefined();
-      expect(db.read).toBeDefined();
-      expect(db.write).toBeDefined();
-      expect(db.data).toBeDefined();
-    });
-
-    it('should preserve existing data if db.json exists', async () => {
-      const vibeDir = path.join(testRepoPath, '.vibetree');
-      fs.mkdirSync(vibeDir, { recursive: true });
-
-      const existingData = {
-        tasks: [
-          {
-            id: 'test-1',
-            title: 'Test Task',
-            description: 'Test Description',
-            createdAt: '2024-01-01',
-            branchName: 'test-branch',
-          },
-        ],
-      };
-      fs.writeFileSync(
-        path.join(vibeDir, 'db.json'),
-        JSON.stringify(existingData)
-      );
-
-      const db = await initDB(testRepoPath);
-      await db.read();
-
-      expect(db.data.tasks).toHaveLength(1);
-      expect(db.data.tasks[0].id).toBe('test-1');
+    it('should not add duplicate repositories', () => {
+      addRepository('/test/repo');
+      addRepository('/test/repo');
+      expect(getRepositories()).toHaveLength(1);
     });
   });
 
-  describe('getDB', () => {
-    it('should return the initialized database', async () => {
-      await initDB(testRepoPath);
-      const db = getDB(testRepoPath);
+  describe('Task Operations', () => {
+    it('should create and retrieve tasks for a repository', () => {
+      const repo = addRepository('/test/repo');
+      const task = createTask(repo.id, { title: 'Test Task' });
 
-      expect(db).toBeDefined();
-      expect(db.data).toBeDefined();
+      expect(task.title).toBe('Test Task');
+      expect(task.repositoryId).toBe(repo.id);
+
+      const tasks = getTasks(repo.id);
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].id).toBe(task.id);
     });
 
-    it('should return the same instance across multiple calls', async () => {
-      await initDB(testRepoPath);
-      const db1 = getDB(testRepoPath);
-      const db2 = getDB(testRepoPath);
+    it('should return empty array for unknown repository', () => {
+      const tasks = getTasks('non-existent');
+      expect(tasks).toHaveLength(0);
+    });
+  });
 
-      expect(db1).toBe(db2);
+  describe('path normalization', () => {
+    it('should remove trailing slashes', () => {
+      expect(normalizePath('/test/path/')).toBe('/test/path');
+      expect(normalizePath('/test/path//')).toBe('/test/path');
     });
 
-    it('should normalize paths', async () => {
-      const normalized = testRepoPath.replace(/[/\\]+$/, '');
-      const withSlash = normalized + '/';
-
-      await initDB(withSlash);
-      const db1 = getDB(normalized);
-      const db2 = getDB(withSlash);
-
-      expect(db1).toBe(db2);
+    it('should handle empty paths', () => {
+      expect(normalizePath('')).toBe('');
     });
   });
 });

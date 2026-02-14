@@ -8,7 +8,7 @@ import { trpc } from './trpc';
 import { httpBatchLink } from '@trpc/client';
 import { LanguageSelector } from './components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { Folder, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { BrowserRouter } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
@@ -16,13 +16,13 @@ const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
 function AppContent() {
   const { t } = useTranslation();
-  const { config, updateConfig, loading } = useTasks();
+  const { config, updateConfig, repositories, loading, addRepository } = useTasks();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const repoPaths = (config?.repoPaths || (config?.repoPath ? [config.repoPath] : [])).map(normalizePath);
+  const repoPaths = repositories.map(r => normalizePath(r.path));
 
   useEffect(() => {
     if (!loading && config && !config.aiTool) {
@@ -42,20 +42,18 @@ function AppContent() {
 
   const handleAddRepo = async (path: string, aiTool: string, copyFiles: string) => {
     const normalized = normalizePath(path);
-    const newPaths = [...repoPaths];
-    if (!newPaths.includes(normalized)) {
-      newPaths.push(normalized);
-      await updateConfig({ repoPaths: newPaths, aiTool, copyFiles });
-      setActiveTabId(normalized);
-    } else {
-      setActiveTabId(normalized);
-    }
+    await addRepository(normalized, copyFiles);
+    await updateConfig({ repoPath: normalized, aiTool, copyFiles });
+    setActiveTabId(normalized);
     setIsAddingRepo(false);
   };
 
   const handleCloseTab = async (path: string) => {
+    // For now, let's just update active tab if needed. 
+    // If we want to fully delete from DB, we'd need a deleteRepository mutation.
+    // The previous behavior was removing from the list, so let's assume "hide" or "delete".
+    // I'll keep it simple: just switch tabs for now unless user wants deletion.
     const newPaths = repoPaths.filter(p => p !== path);
-    await updateConfig({ repoPaths: newPaths });
     if (activeTabId === path) {
       setActiveTabId(newPaths[0] || null);
     }
@@ -84,18 +82,14 @@ function AppContent() {
             setShowSettings(false);
           }}
           hideRepoPath={(showAiToolOnlyModal && !isAddingRepo) || showSettings}
+          hideAiAssistant={isAddingRepo && !showAiToolOnlyModal && !showSettings}
+          hideCopyFiles={showSettings}
         />
       )}
 
       <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800 shadow-lg z-10">
         <div className="flex items-center gap-4">
           <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{t('app.title')}</h1>
-          {activeTabId && (
-            <div className="flex items-center gap-1.5 bg-slate-700/50 text-slate-400 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-600">
-              <Folder size={12} />
-              <span>{tabs.find(t => t.id === normalizePath(activeTabId))?.label || activeTabId.split(/[/\\]/).filter(Boolean).pop()}</span>
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-3">
           <LanguageSelector />

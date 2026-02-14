@@ -1,13 +1,15 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { trpc } from '../trpc';
-import { Task, AppConfig } from '../types';
+import { Repository, Task, AppConfig } from '../types';
 
 interface TaskContextType {
     config: AppConfig | null;
+    repositories: Repository[];
     loading: boolean;
     updateConfig: (updates: Partial<AppConfig>) => Promise<void>;
     addTask: (repoPath: string, title: string, description: string) => Promise<Task>;
     deleteTask: (repoPath: string, taskId: string) => Promise<void>;
+    addRepository: (path: string, copyFiles?: string) => Promise<Repository>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -21,11 +23,18 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
     // Queries
     const { data: config = null, isLoading: configLoading } = trpc.getConfig.useQuery();
+    const { data: repositories = [], isLoading: reposLoading } = trpc.getRepositories.useQuery();
 
     // Mutations
     const updateConfigMutation = trpc.updateConfig.useMutation({
         onSuccess: (newConfig) => {
             utils.getConfig.setData(undefined, newConfig);
+        }
+    });
+
+    const addRepositoryMutation = trpc.addRepository.useMutation({
+        onSuccess: () => {
+            utils.getRepositories.invalidate();
         }
     });
 
@@ -44,6 +53,10 @@ export function TaskProvider({ children }: TaskProviderProps) {
         await updateConfigMutation.mutateAsync(updates);
     };
 
+    const addRepository = async (path: string, copyFiles?: string): Promise<Repository> => {
+        return await addRepositoryMutation.mutateAsync({ path, copyFiles });
+    };
+
     const addTask = async (repoPath: string, title: string, description: string): Promise<Task> => {
         return await createTaskMutation.mutateAsync({ repoPath, title, description });
     };
@@ -54,10 +67,12 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
     const contextValue: TaskContextType = {
         config,
-        loading: configLoading,
+        repositories,
+        loading: configLoading || reposLoading,
         updateConfig,
         addTask,
         deleteTask,
+        addRepository,
     };
 
     return (

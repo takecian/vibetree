@@ -1,20 +1,20 @@
+export interface Repository {
+    id: string;
+    path: string;
+    copyFiles?: string;
+}
+
 export interface Task {
     id: string;
+    repositoryId: string;
     title: string;
     description: string;
     createdAt: string;
     branchName: string;
-    // Add any other properties your tasks might have
-}
-
-export interface DBData {
-    tasks: Task[];
-    // Add any other top-level data structures in your db.json
 }
 
 export interface AppConfig {
-    repoPath: string;
-    repoPaths?: string[];
+    repoPath: string; // Active repo path
     aiTool: string;
     /** Newline-separated file paths (relative to repo or absolute) to copy into each worktree */
     copyFiles?: string;

@@ -1,52 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { getTaskById } from './tasks';
-import { initDB, clearDBs } from './db';
-import { Task } from './types';
+import { addRepository, createTask as createTaskInDB, clearDB } from './db';
 
 describe('tasks', () => {
-  let testRepoPath: string;
+  const testRepoPath = '/test/repo';
+  let repositoryId: string;
 
   beforeEach(async () => {
-    // Create a temporary directory for testing
-    testRepoPath = path.join(os.tmpdir(), `vibetree-tasks-test-${Date.now()}`);
-    fs.mkdirSync(testRepoPath, { recursive: true });
-
-    // Initialize database
-    await initDB(testRepoPath);
+    clearDB();
+    const repo = addRepository(testRepoPath);
+    repositoryId = repo.id;
   });
 
   afterEach(() => {
-    // Clean up test directory
-    if (fs.existsSync(testRepoPath)) {
-      fs.rmSync(testRepoPath, { recursive: true, force: true });
-    }
-    clearDBs();
+    clearDB();
   });
 
   describe('getTaskById', () => {
     it('should return undefined when task does not exist', async () => {
       const task = await getTaskById('non-existent-id', testRepoPath);
-
       expect(task).toBeUndefined();
     });
 
     it('should return task when it exists', async () => {
-      const db = (await import('./db')).getDB(testRepoPath);
-      await db.read();
-
-      const testTask: Task = {
+      const testTask = createTaskInDB(repositoryId, {
         id: 'task-123',
         title: 'Test Task',
         description: 'Test Description',
         createdAt: '2024-01-01T00:00:00.000Z',
         branchName: 'feature/test',
-      };
-
-      db.data.tasks.push(testTask);
-      await db.write();
+      });
 
       const task = await getTaskById('task-123', testRepoPath);
 
@@ -57,35 +40,9 @@ describe('tasks', () => {
     });
 
     it('should return the correct task when multiple tasks exist', async () => {
-      const db = (await import('./db')).getDB(testRepoPath);
-      await db.read();
-
-      const tasks: Task[] = [
-        {
-          id: 'task-1',
-          title: 'First Task',
-          description: 'First Description',
-          createdAt: '2024-01-01T00:00:00.000Z',
-          branchName: 'feature/first',
-        },
-        {
-          id: 'task-2',
-          title: 'Second Task',
-          description: 'Second Description',
-          createdAt: '2024-01-02T00:00:00.000Z',
-          branchName: 'feature/second',
-        },
-        {
-          id: 'task-3',
-          title: 'Third Task',
-          description: 'Third Description',
-          createdAt: '2024-01-03T00:00:00.000Z',
-          branchName: 'feature/third',
-        },
-      ];
-
-      db.data.tasks = tasks;
-      await db.write();
+      createTaskInDB(repositoryId, { id: 'task-1', title: 'First Task' });
+      createTaskInDB(repositoryId, { id: 'task-2', title: 'Second Task' });
+      createTaskInDB(repositoryId, { id: 'task-3', title: 'Third Task' });
 
       const task = await getTaskById('task-2', testRepoPath);
 
@@ -95,30 +52,7 @@ describe('tasks', () => {
 
     it('should handle empty database', async () => {
       const task = await getTaskById('any-id', testRepoPath);
-
       expect(task).toBeUndefined();
-    });
-
-    it('should refresh data from disk', async () => {
-      const db = (await import('./db')).getDB(testRepoPath);
-      await db.read();
-
-      const testTask: Task = {
-        id: 'task-refresh',
-        title: 'Refresh Test',
-        description: 'Test Description',
-        createdAt: '2024-01-01T00:00:00.000Z',
-        branchName: 'feature/refresh',
-      };
-
-      db.data.tasks.push(testTask);
-      await db.write();
-
-      // Call getTaskById which should read from disk
-      const task = await getTaskById('task-refresh', testRepoPath);
-
-      expect(task).toBeDefined();
-      expect(task?.id).toBe('task-refresh');
     });
   });
 });

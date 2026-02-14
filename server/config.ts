@@ -21,11 +21,9 @@ export function loadConfig(): AppConfig {
         const normalize = (p: string) => p ? p.replace(/[/\\]+$/, '') : '';
         const persisted = JSON.parse(data);
         const repoPath = persisted.repoPath ? normalize(persisted.repoPath) : '';
-        const repoPaths = (persisted.repoPaths || (persisted.repoPath ? [persisted.repoPath] : [])).map(normalize).filter(Boolean);
 
         return {
             repoPath: process.env.REPO_PATH || repoPath || defaultConfig.repoPath,
-            repoPaths: repoPaths,
             aiTool: process.env.AI_TOOL || persisted.aiTool || defaultConfig.aiTool,
             copyFiles: persisted.copyFiles !== undefined ? persisted.copyFiles : persisted.copy_files
         };

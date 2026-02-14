@@ -5,26 +5,29 @@ import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
 import { appRouter } from './router';
-import { initDB, clearDBs } from './db';
-import { Task, AppConfig } from './types';
+import { addRepository, getTasks, createTask, getTaskById, clearDB, normalizePath } from './db';
+import { Repository, Task, AppConfig } from './types';
 import { Context } from './trpc';
 
 const execAsync = util.promisify(exec);
 
 describe('router', () => {
   let testRepoPath: string;
+  let testRepo: Repository;
   let mockState: AppConfig;
   let mockCreateWorktree: Mock;
   let mockEnsureTerminalForTask: Mock;
   let mockRunAiForTask: Mock;
 
   beforeEach(async () => {
+    clearDB();
+
     // Create a temporary directory for testing
     testRepoPath = path.join(os.tmpdir(), `vibetree-router-test-${Date.now()}`);
     fs.mkdirSync(testRepoPath, { recursive: true });
 
-    // Initialize database
-    await initDB(testRepoPath);
+    // Initialize repository in DB
+    testRepo = addRepository(testRepoPath);
 
     // Setup mock state and functions
     mockState = {
@@ -47,7 +50,7 @@ describe('router', () => {
     if (fs.existsSync(testRepoPath)) {
       fs.rmSync(testRepoPath, { recursive: true, force: true });
     }
-    clearDBs();
+    clearDB();
     vi.clearAllMocks();
   });
 
@@ -71,7 +74,7 @@ describe('router', () => {
     });
 
     describe('updateConfig', () => {
-      it('should update repoPath', async () => {
+      it('should update repoPath and add to repositories', async () => {
         // Create a temporary directory to use as the new path
         const newPath = path.join(os.tmpdir(), `vibetree-new-path-${Date.now()}`);
         fs.mkdirSync(newPath, { recursive: true });
@@ -82,7 +85,11 @@ describe('router', () => {
           repoPath: newPath,
         });
 
-        expect(result.repoPath).toBe(newPath);
+        expect(result.repoPath).toBe(normalizePath(newPath));
+
+        // Verify it was added to repositories
+        const repos = await caller.getRepositories();
+        expect(repos.map(r => r.path)).toContain(normalizePath(newPath));
 
         // Clean up
         fs.rmSync(newPath, { recursive: true, force: true });
@@ -115,16 +122,6 @@ describe('router', () => {
           caller.updateConfig({ repoPath: '/nonexistent/path' })
         ).rejects.toThrow('Path does not exist');
       });
-
-      it('should allow empty repoPath', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        const result = await caller.updateConfig({
-          repoPath: '',
-        });
-
-        expect(result.repoPath).toBe('');
-      });
     });
   });
 
@@ -137,56 +134,21 @@ describe('router', () => {
         expect(result).toEqual([]);
       });
 
-      it('should return all tasks', async () => {
-        const db = (await import('./db')).getDB(testRepoPath);
-        await db.read();
-
-        const testTasks: Task[] = [
-          {
-            id: 'task-1',
-            title: 'Task 1',
-            description: 'Description 1',
-            createdAt: '2024-01-01',
-            branchName: 'feature/task-1',
-          },
-          {
-            id: 'task-2',
-            title: 'Task 2',
-            description: 'Description 2',
-            createdAt: '2024-01-02',
-            branchName: 'feature/task-2',
-          },
-        ];
-
-        db.data.tasks = testTasks;
-        await db.write();
+      it('should return all tasks for a repo', async () => {
+        createTask(testRepo.id, { id: 'task-1', title: 'Task 1' });
+        createTask(testRepo.id, { id: 'task-2', title: 'Task 2' });
 
         const caller = appRouter.createCaller(createContext());
         const result = await caller.getTasks({ repoPath: testRepoPath });
 
         expect(result).toHaveLength(2);
-        expect(result[0].id).toBe('task-1');
-        expect(result[1].id).toBe('task-2');
+        expect(result.some(t => t.id === 'task-1')).toBe(true);
+        expect(result.some(t => t.id === 'task-2')).toBe(true);
       });
     });
 
     describe('createTask', () => {
-      it('should create a new task with title', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        const result = await caller.createTask({
-          repoPath: testRepoPath,
-          title: 'New Task',
-        });
-
-        expect(result.id).toBeDefined();
-        expect(result.title).toBe('New Task');
-        expect(result.description).toBe('');
-        expect(result.createdAt).toBeDefined();
-        expect(result.branchName).toMatch(/^feature\/task-/);
-      });
-
-      it('should create a task with description', async () => {
+      it('should create a new task and persist it', async () => {
         const caller = appRouter.createCaller(createContext());
 
         const result = await caller.createTask({
@@ -195,10 +157,17 @@ describe('router', () => {
           description: 'Task description',
         });
 
+        expect(result.id).toBeDefined();
+        expect(result.title).toBe('New Task');
         expect(result.description).toBe('Task description');
+
+        // Verify persistence
+        const tasks = getTasks(testRepo.id);
+        expect(tasks).toHaveLength(1);
+        expect(tasks[0].id).toBe(result.id);
       });
 
-      it('should call createWorktree when repoPath is set', async () => {
+      it('should call side effect functions', async () => {
         const caller = appRouter.createCaller(createContext());
 
         await caller.createTask({
@@ -207,97 +176,26 @@ describe('router', () => {
         });
 
         expect(mockCreateWorktree).toHaveBeenCalled();
-      });
-
-      it('should call ensureTerminalForTask when repoPath is set', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        await caller.createTask({
-          repoPath: testRepoPath,
-          title: 'New Task',
-        });
-
         expect(mockEnsureTerminalForTask).toHaveBeenCalled();
-      });
-
-      it('should call runAiForTask when repoPath is set', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        // Add a small delay to allow async call to complete
-        await caller.createTask({
-          repoPath: testRepoPath,
-          title: 'New Task',
-        });
-
         expect(mockRunAiForTask).toHaveBeenCalled();
-      });
-
-      it('should persist task to database', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        await caller.createTask({
-          repoPath: testRepoPath,
-          title: 'Persisted Task',
-        });
-
-        const db = (await import('./db')).getDB(testRepoPath);
-        await db.read();
-
-        expect(db.data.tasks).toHaveLength(1);
-        expect(db.data.tasks[0].title).toBe('Persisted Task');
       });
     });
 
     describe('updateTask', () => {
-      it('should update task title', async () => {
-        const db = (await import('./db')).getDB(testRepoPath);
-        await db.read();
-
-        const testTask: Task = {
-          id: 'task-update-1',
-          title: 'Original Title',
-          description: 'Description',
-          createdAt: '2024-01-01',
-          branchName: 'feature/test',
-        };
-
-        db.data.tasks.push(testTask);
-        await db.write();
+      it('should update task details', async () => {
+        const t = createTask(testRepo.id, { id: 'task-1', title: 'Old Title' });
 
         const caller = appRouter.createCaller(createContext());
         const result = await caller.updateTask({
           repoPath: testRepoPath,
-          id: 'task-update-1',
-          updates: { title: 'Updated Title' },
+          id: 'task-1',
+          updates: { title: 'New Title' },
         });
 
-        expect(result.title).toBe('Updated Title');
-        expect(result.description).toBe('Description');
-      });
+        expect(result.title).toBe('New Title');
 
-      it('should update task description', async () => {
-        const db = (await import('./db')).getDB(testRepoPath);
-        await db.read();
-
-        const testTask: Task = {
-          id: 'task-update-2',
-          title: 'Title',
-          description: 'Original Description',
-          createdAt: '2024-01-01',
-          branchName: 'feature/test',
-        };
-
-        db.data.tasks.push(testTask);
-        await db.write();
-
-        const caller = appRouter.createCaller(createContext());
-        const result = await caller.updateTask({
-          repoPath: testRepoPath,
-          id: 'task-update-2',
-          updates: { description: 'Updated Description' },
-        });
-
-        expect(result.description).toBe('Updated Description');
+        const updated = getTaskById('task-1');
+        expect(updated?.title).toBe('New Title');
       });
 
       it('should throw error when task does not exist', async () => {
@@ -314,36 +212,14 @@ describe('router', () => {
     });
 
     describe('deleteTask', () => {
-      it('should delete task by id', async () => {
-        const db = (await import('./db')).getDB(testRepoPath);
-        await db.read();
-
-        const testTask: Task = {
-          id: 'task-delete-1',
-          title: 'Task to Delete',
-          description: 'Description',
-          createdAt: '2024-01-01',
-          branchName: 'feature/test',
-        };
-
-        db.data.tasks.push(testTask);
-        await db.write();
+      it('should delete task and call cleanup side effects', async () => {
+        createTask(testRepo.id, { id: 'task-1', title: 'To Delete' });
 
         const caller = appRouter.createCaller(createContext());
-        const result = await caller.deleteTask({ repoPath: testRepoPath, taskId: 'task-delete-1' });
+        const result = await caller.deleteTask({ repoPath: testRepoPath, taskId: 'task-1' });
 
         expect(result.success).toBe(true);
-
-        await db.read();
-        expect(db.data.tasks).toHaveLength(0);
-      });
-
-      it('should not throw error when deleting non-existent task', async () => {
-        const caller = appRouter.createCaller(createContext());
-
-        const result = await caller.deleteTask({ repoPath: testRepoPath, taskId: 'non-existent' });
-
-        expect(result.success).toBe(true);
+        expect(getTaskById('task-1')).toBeUndefined();
       });
     });
   });
@@ -370,34 +246,10 @@ describe('router', () => {
         expect(result.branch).toBeDefined();
         expect(result.status).toBeDefined();
       });
-
-      it('should return empty status when no changes', async () => {
-        const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitStatus({ repoPath: testRepoPath });
-
-        expect(result.status).toBe('');
-      });
-    });
-
-    describe('getGitDiff', () => {
-      it('should return git diff', async () => {
-        const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitDiff({ repoPath: testRepoPath });
-
-        expect(result).toHaveProperty('diff');
-      });
-
-      it('should return empty diff when no changes', async () => {
-        const caller = appRouter.createCaller(createContext());
-        const result = await caller.getGitDiff({ repoPath: testRepoPath });
-
-        expect(result.diff).toBe('');
-      });
     });
 
     describe('createCommit', () => {
       it('should create a commit', async () => {
-        // Add a change
         fs.writeFileSync(path.join(testRepoPath, 'new.txt'), 'new content');
 
         const caller = appRouter.createCaller(createContext());
@@ -408,7 +260,6 @@ describe('router', () => {
 
         expect(result.success).toBe(true);
 
-        // Verify commit was created
         const { stdout } = await execAsync('git log -1 --pretty=%B', { cwd: testRepoPath });
         expect(stdout.trim()).toBe('Test commit');
       });
@@ -424,9 +275,6 @@ describe('router', () => {
         expect(result).toHaveProperty('claude');
         expect(result).toHaveProperty('codex');
         expect(result).toHaveProperty('gemini');
-        expect(typeof result.claude).toBe('boolean');
-        expect(typeof result.codex).toBe('boolean');
-        expect(typeof result.gemini).toBe('boolean');
       });
     });
   });

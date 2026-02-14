@@ -50,6 +50,7 @@
       "confirm": "削除"
     },
     "description": "説明",
+    "openInFinder": "ファインダーで開く",
     "status": "ステータス",
     "statusValues": {
       "todo": "未着手",

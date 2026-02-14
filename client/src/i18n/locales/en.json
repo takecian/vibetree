@@ -50,6 +50,7 @@
       "confirm": "Delete"
     },
     "description": "Description",
+    "openInFinder": "Open in Finder",
     "status": "Status",
     "statusValues": {
       "todo": "To Do",

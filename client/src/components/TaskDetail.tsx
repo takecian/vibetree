@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
-import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch } from 'lucide-react';
+import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
@@ -33,6 +33,12 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
         { taskId: effectiveId },
         { enabled: activeTab === 'diff' && !!effectiveId }
     );
+    const { data: worktree } = trpc.getWorktreePath.useQuery(
+        { taskId: effectiveId! },
+        { enabled: !!effectiveId }
+    );
+    const openDirectory = trpc.openDirectory.useMutation();
+
 
     if (!task) return null; // Don't show loading in sidebar, just null if not found
 
@@ -63,6 +69,12 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
             } else {
                 navigate('/'); // Navigate to main board
             }
+        }
+    };
+
+    const handleOpenWorktree = () => {
+        if (worktree?.path) {
+            openDirectory.mutate({ path: worktree.path });
         }
     };
 
@@ -105,7 +117,16 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
             <main className="flex-1 overflow-hidden p-0 flex relative">
                 <div className={`flex-1 p-6 overflow-y-auto ${activeTab !== 'details' ? 'hidden' : ''}`}>
                     <div className="bg-slate-800 p-6 rounded-xl border border-slate-600 max-w-[800px] mx-auto">
-                        <h3 className="mt-0 mb-4 text-base text-slate-400 uppercase tracking-wider">{t('taskDetail.description')}</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="mt-0 text-base text-slate-400 uppercase tracking-wider">{t('taskDetail.description')}</h3>
+                            <button
+                                onClick={handleOpenWorktree}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
+                            >
+                                <Folder size={16} />
+                                {t('taskDetail.openInFinder')}
+                            </button>
+                        </div>
                         <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>
                     </div>
                 </div>
@@ -139,4 +160,5 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
             )}
         </div>
     );
-}                                 
+}
+                                 

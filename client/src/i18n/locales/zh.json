@@ -50,6 +50,7 @@
       "confirm": "删除"
     },
     "description": "描述",
+    "openInFinder": "在访达中打开",
     "status": "状态",
     "statusValues": {
       "todo": "待办",

@@ -143,8 +143,33 @@ export const appRouter = router({
             await runGit(`git commit -m "${input.message}"`, cwd, repoPath);
             return { success: true };
         }),
+    getWorktreePath: publicProcedure
+        .input(z.object({ taskId: z.string() }))
+        .query(({ input, ctx }) => {
+            const { repoPath } = ctx.getState();
+            const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', input.taskId);
+            return { path: worktreePath };
+        }),
 
     // System Procedures
+    openDirectory: publicProcedure
+        .input(z.object({ path: z.string() }))
+        .mutation(async ({ input }) => {
+            let command: string;
+            switch (os.platform()) {
+                case 'darwin':
+                    command = `open "${input.path}"`;
+                    break;
+                case 'win32':
+                    command = `start "" "${input.path}"`;
+                    break;
+                default:
+                    command = `xdg-open "${input.path}"`;
+                    break;
+            }
+            await execAsync(command);
+            return { success: true };
+        }),
     pickFolder: publicProcedure.mutation(async () => {
         let command: string | undefined;
         if (os.platform() === 'darwin') {

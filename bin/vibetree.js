@@ -48,8 +48,14 @@ async function verifyNativeModules(pkgRoot) {
         VIBETREE_PORT: PORT,
     };
 
-    if (!fs.existsSync(serverPath)) {
-        console.log('Building server (first run or npx)...');
+    const currentVersion = require(path.join(pkgRoot, 'package.json')).version;
+    const checkVersion = (distPath) => {
+        const versionFile = path.join(distPath, '.version');
+        return fs.existsSync(versionFile) && fs.readFileSync(versionFile, 'utf8').trim() === currentVersion;
+    };
+
+    if (!fs.existsSync(serverPath) || !checkVersion(path.dirname(serverPath))) {
+        console.log('Building server (first run or version update)...');
         const build = spawnSync('npm', ['run', 'build', '-w', 'server'], {
             cwd: pkgRoot,
             stdio: 'inherit',
@@ -59,10 +65,12 @@ async function verifyNativeModules(pkgRoot) {
             console.error('Server build failed.');
             process.exit(build.status || 1);
         }
+        // Save version
+        fs.writeFileSync(path.join(path.dirname(serverPath), '.version'), currentVersion);
     }
 
-    if (!fs.existsSync(clientPath)) {
-        console.log('Building client dashboard (first run or npx)...');
+    if (!fs.existsSync(clientPath) || !checkVersion(clientPath)) {
+        console.log('Building client dashboard (first run or version update)...');
         const build = spawnSync('npm', ['run', 'build', '-w', 'client'], {
             cwd: pkgRoot,
             stdio: 'inherit',
@@ -72,6 +80,8 @@ async function verifyNativeModules(pkgRoot) {
             console.error('Client build failed.');
             process.exit(build.status || 1);
         }
+        // Save version
+        fs.writeFileSync(path.join(clientPath, '.version'), currentVersion);
     }
 
     console.log('Launching server...');

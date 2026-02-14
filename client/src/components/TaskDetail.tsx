@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
@@ -14,6 +15,7 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
+    const { t } = useTranslation();
     const { id } = useParams<string>();
     const navigate = useNavigate();
     const { tasks, deleteTask } = useTasks();
@@ -77,13 +79,13 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                 </div>
                 <div className="flex gap-3 relative">
                     <button className={getTabButtonClasses(activeTab === 'details')} onClick={() => setActiveTab('details')}>
-                        <FileText size={16} /> Details
+                        <FileText size={16} /> {t('taskDetail.tabs.details')}
                     </button>
                     <button className={getTabButtonClasses(activeTab === 'terminal')} onClick={() => setActiveTab('terminal')}>
-                        <Terminal size={16} /> Terminal
+                        <Terminal size={16} /> {t('taskDetail.tabs.terminal')}
                     </button>
                     <button className={getTabButtonClasses(activeTab === 'diff')} onClick={() => setActiveTab('diff')}>
-                        <GitBranch size={16} /> Diff
+                        <GitBranch size={16} /> {t('taskDetail.tabs.diff')}
                     </button>
                     <div className="relative flex items-center">
                         <button className="bg-transparent border-0 text-slate-400 cursor-pointer p-2 rounded-full flex items-center justify-center hover:bg-slate-600 hover:text-slate-50" onClick={() => setShowOptionsMenu(!showOptionsMenu)}>
@@ -92,7 +94,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                         {showOptionsMenu && (
                             <div className="absolute top-full right-0 bg-slate-800 border border-slate-600 rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.2)] min-w-[120px] z-10 overflow-hidden mt-2">
                                 <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600">
-                                    <Trash2 size={16} /> Delete
+                                    <Trash2 size={16} /> {t('taskDetail.delete')}
                                 </button>
                             </div>
                         )}
@@ -103,7 +105,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
             <main className="flex-1 overflow-hidden p-0 flex relative">
                 <div className={`flex-1 p-6 overflow-y-auto ${activeTab !== 'details' ? 'hidden' : ''}`}>
                     <div className="bg-slate-800 p-6 rounded-xl border border-slate-600 max-w-[800px] mx-auto">
-                        <h3 className="mt-0 mb-4 text-base text-slate-400 uppercase tracking-wider">Description</h3>
+                        <h3 className="mt-0 mb-4 text-base text-slate-400 uppercase tracking-wider">{t('taskDetail.description')}</h3>
                         <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>
                     </div>
                 </div>
@@ -114,11 +116,11 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
 
                 <div className={`flex-1 p-6 overflow-y-auto bg-slate-900 ${activeTab !== 'diff' ? 'hidden' : ''}`}>
                     {loadingDiff ? (
-                        <div className="flex justify-center items-center h-40 text-slate-500">Loading diff...</div>
+                        <div className="flex justify-center items-center h-40 text-slate-500">{t('taskDetail.diffLoading')}</div>
                     ) : (
                         <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs overflow-x-auto">
                             <pre className="text-slate-300 whitespace-pre font-mono">
-                                {diffData?.diff || 'No changes to show.'}
+                                {diffData?.diff || t('taskDetail.diffEmpty')}
                             </pre>
                         </div>
                     )}
@@ -129,11 +131,10 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                 <ConfirmationModal
                     onClose={() => setDeleteModalOpen(false)}
                     onConfirm={handleConfirmDelete}
-                    title="Delete Task"
-                    confirmText="Delete"
+                    title={t('taskDetail.deleteConfirmation.title')}
+                    confirmText={t('taskDetail.deleteConfirmation.confirm')}
                 >
-                    <p>Are you sure you want to delete the task "{task.title}"?</p>
-                    <p className="text-sm text-slate-400 mt-4">This will also remove any associated terminal sessions. This action cannot be undone.</p>
+                    <p>{t('taskDetail.deleteConfirmation.message', { title: task.title })}</p>
                 </ConfirmationModal>
             )}
         </div>

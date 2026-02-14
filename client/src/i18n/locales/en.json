@@ -1,0 +1,64 @@
+{
+  "app": {
+    "title": "Vibetree"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "settings": "Settings",
+    "noRepository": "No Repository"
+  },
+  "header": {
+    "newTask": "New Task"
+  },
+  "taskList": {
+    "title": "All Tasks",
+    "count": "{{count}}",
+    "empty": "No tasks found. Create one to get started."
+  },
+  "createTask": {
+    "title": "Create New Task",
+    "titlePlaceholder": "Task Title",
+    "descriptionPlaceholder": "Task Description (optional)",
+    "createButton": "Create Task"
+  },
+  "repoModal": {
+    "title": "Configuration",
+    "subtitle": "Setup your repository and AI assistant.",
+    "repoPath": "Repository Path",
+    "repoPathPlaceholder": "/Users/username/projects/my-repo",
+    "browseFolderTitle": "Browse Folder",
+    "aiAssistant": "AI Assistant",
+    "checkingTools": "Checking tools...",
+    "copyFiles": "Files to copy into worktrees",
+    "copyFilesPlaceholder": ".env\n.env.local",
+    "copyFilesHelp": "One path per line (relative to repo root or absolute). These files are copied into each new worktree (e.g. .env).",
+    "saveConfiguration": "Save Configuration",
+    "folderPickerError": "Failed to open folder picker. Please paste the path manually."
+  },
+  "taskDetail": {
+    "tabs": {
+      "details": "Details",
+      "terminal": "Terminal",
+      "diff": "Diff"
+    },
+    "delete": "Delete",
+    "deleteConfirmation": {
+      "title": "Delete Task",
+      "message": "Are you sure you want to delete this task? This will also delete the git worktree and cannot be undone.",
+      "confirm": "Delete"
+    },
+    "description": "Description",
+    "status": "Status",
+    "statusValues": {
+      "todo": "To Do",
+      "inprogress": "In Progress",
+      "done": "Done"
+    },
+    "diffLoading": "Loading diff...",
+    "diffEmpty": "No changes detected",
+    "diffError": "Failed to load diff"
+  }
+}

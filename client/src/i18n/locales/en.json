@@ -47,7 +47,7 @@
     "delete": "Delete",
     "deleteConfirmation": {
       "title": "Delete Task",
-      "message": "Are you sure you want to delete this task? This will also delete the git worktree and cannot be undone.",
+      "message": "Are you sure you want to delete the task \"{{title}}\"? This will also delete the git worktree and cannot be undone.",
       "confirm": "Delete"
     },
     "description": "Description",

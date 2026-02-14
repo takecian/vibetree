@@ -43,14 +43,24 @@ vibetree/
 │   ├── public/            # Static assets
 │   ├── src/
 │   │   ├── components/    # React components
+│   │   │   ├── ConfirmationModal.tsx
 │   │   │   ├── CreateTaskModal.tsx
 │   │   │   ├── KanbanBoard.tsx   # Main Task View
+│   │   │   ├── LanguageSelector.tsx
 │   │   │   ├── RepoModal.tsx
+│   │   │   ├── Tabs.tsx
 │   │   │   ├── TaskDetail.tsx
 │   │   │   └── TerminalView.tsx
 │   │   ├── context/       # React context providers
 │   │   │   ├── TaskContext.tsx
 │   │   │   └── TerminalContext.tsx
+│   │   ├── i18n/          # Internationalization resources
+│   │   │   ├── config.ts
+│   │   │   └── locales/
+│   │   │       ├── en.json
+│   │   │       ├── ja.json
+│   │   │       ├── ko.json
+│   │   │       └── zh.json
 │   │   ├── assets/        # Images and other assets
 │   │   ├── trpc.ts        # tRPC client instance
 │   │   ├── types.ts       # Shared type definitions
@@ -61,16 +71,24 @@ vibetree/
 │   ├── tsconfig.json      # TypeScript configuration
 │   └── vite.config.ts     # Vite configuration
 ├── server/                 # Express.js backend
-│   ├── db.ts              # Database initialization and access
-│   ├── git.ts             # Git helper functions (worktree, status, diff)
-│   ├── index.ts           # Server entry point and configuration
-│   ├── router.ts          # tRPC App Router and Procedures
-│   ├── tasks.ts           # Task helper functions
-│   ├── terminal.ts        # Terminal emulator management
-│   ├── trpc.ts            # tRPC initialization and Context
-│   ├── types.ts           # Shared type definitions
+│   ├── src/
+│   │   ├── api/           # tRPC router and API-related setup
+│   │   │   ├── router.ts
+│   │   │   └── trpc.ts
+│   │   ├── config/        # Server configuration
+│   │   │   └── index.ts
+│   │   ├── services/      # Business logic and helper functions
+│   │   │   ├── db.ts              # Database initialization and access
+│   │   │   ├── git.ts             # Git helper functions (worktree, status, diff)
+│   │   │   ├── tasks.ts           # Task helper functions
+│   │   │   └── terminal.ts        # Terminal emulator management
+│   │   ├── index.ts       # Server entry point
+│   │   └── types/         # Shared type definitions
+│   │       └── index.ts
 │   ├── package.json       # Server dependencies
-│   └── tsconfig.json      # TypeScript configuration (compiles to dist/)
+│   ├── README_TESTS.md    # Server tests README
+│   ├── tsconfig.json      # TypeScript configuration (compiles to dist/)
+│   └── vitest.config.ts   # Vitest configuration
 ├── docs/                   # Documentation
 │   └── architecture.md    # This file
 ├── package.json            # Root package.json (workspace configuration)
@@ -97,17 +115,17 @@ vibetree/
 
 **Purpose**: Backend server handling business logic, data persistence, and Git operations via tRPC.
 
-**Entry Point**: `server/index.ts`
+**Entry Point**: `server/src/index.ts`
 
 **Core Modules**:
 
-#### `index.ts` - Server Configuration
+#### `server/src/index.ts` - Server Initialization
 - Express application setup
 - tRPC middleware configuration (`/api/trpc`)
 - Socket.IO initialization
 - State management injection
 
-#### `router.ts` - tRPC Router
+#### `server/src/api/router.ts` - tRPC App Router
 - Defines the `AppRouter`
 - Implements procedures for:
   - **Config**: `getConfig`, `updateConfig`
@@ -115,21 +133,32 @@ vibetree/
   - **Git**: `getGitStatus`, `getGitDiff`, `createCommit`
   - **System**: `pickFolder`, `getAiTools`
 
-#### `trpc.ts` - tRPC Setup
+#### `server/src/api/trpc.ts` - tRPC Context
 - Initializes tRPC
 - Defines the `Context` interface (State + Helpers)
 
-#### `db.ts` - Data Persistence
+#### `server/src/config/index.ts` - Configuration Module
+- Handles application-wide configurations and settings.
+
+#### `server/src/services/db.ts` - Data Persistence Service
 - LowDB initialization
 - JSON-based database operations
 
-#### `tasks.ts` & `git.ts` - Helpers
-- Pure helper functions for task and git logic
-- Used by `router.ts` procedures
+#### `server/src/services/git.ts` - Git Service
+- Pure helper functions for Git logic (worktree, status, diff)
+- Used by tRPC procedures
 
-#### `terminal.ts` - Terminal Emulation
+#### `server/src/services/tasks.ts` - Task Service
+- Pure helper functions for task logic
+- Used by tRPC procedures
+
+#### `server/src/services/terminal.ts` - Terminal Emulation Service
 - Pseudo-terminal (PTY) management via `node-pty`
 - Socket.IO handlers for terminal events
+
+#### `server/src/types/index.ts` - Shared Type Definitions
+- Contains TypeScript type definitions shared across server modules.
+
 
 ### 3. Client Layer (`client/`)
 
@@ -147,9 +176,15 @@ vibetree/
 - Creates the typed tRPC hooks (`createTRPCReact`)
 - Imports `AppRouter` type from server (no code import)
 
-#### `TaskContext.tsx`
+#### `TaskContext.tsx` - Task Context Provider
 - Refactored to use `trpc.useQuery` and `trpc.useMutation`
-- Manages optimistic updates and cache invalidation
+- Manages optimistic updates and cache invalidation for tasks.
+
+#### `TerminalContext.tsx` - Terminal Context Provider
+- Manages the state and functionality related to the terminal emulator.
+
+#### `i18n/` - Internationalization
+- Contains configuration (`config.ts`) and translation files (`locales/`) for different languages.
 
 #### Components (`KanbanBoard`, `TaskDetail`, etc.)
 - specialized UI components

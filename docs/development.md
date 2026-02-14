@@ -275,7 +275,7 @@ VIBE_FLOW_PORT=3000
 ### Testing Issues
 
 - **Tests failing**: Check mock implementations and test data
-- **Coverage not generated**: Ensure `@vitest/ui` is installed
+- **Coverage not generated**: Ensure a coverage provider like `@vitest/coverage-v8` is installed
 
 ## Resources
 

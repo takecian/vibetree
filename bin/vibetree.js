@@ -4,77 +4,40 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
-const prompts = require('prompts');
 // const open = require('open'); // Moved to dynamic import
 
-const argv = yargs(hideBin(process.argv))
-    .option('repo', {
-        alias: 'r',
-        type: 'string',
-        description: 'Path to target repository',
-    })
-    .option('ai', {
-        alias: 'a',
-        type: 'string',
-        choices: ['claude', 'codex', 'gemini'],
-        description: 'AI tool to use',
-    })
-    .argv;
+const argv = yargs(hideBin(process.argv)).argv;
+
+async function verifyNativeModules(pkgRoot) {
+    try {
+        require(require.resolve('node-pty', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] }));
+        require(require.resolve('better-sqlite3', { paths: [path.join(pkgRoot, 'node_modules'), pkgRoot] }));
+    } catch (e) {
+        if (e.code === 'ERR_DLOPEN_FAILED' || (e.message && e.message.includes('Node.js version'))) {
+            console.log('\x1b[33m%s\x1b[0m', 'Binary mismatch detected. Rebuilding native modules for your Node.js version...');
+            spawnSync('npm', ['rebuild', 'node-pty', 'better-sqlite3'], { cwd: pkgRoot, stdio: 'inherit', shell: true });
+        }
+    }
+}
 
 (async () => {
+    const pkgRoot = path.join(__dirname, '..');
+
+    // Verify native modules before proceeding
+    await verifyNativeModules(pkgRoot);
+
     const PORT = process.env.VIBETREE_PORT || 5179;
-
-    // 1. Resolve Repo Path
-    let repoPath = argv.repo ? path.resolve(argv.repo) : process.cwd();
-
-    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
-        console.error(`Error: Repository path does not exist: ${repoPath}`);
-        process.exit(1);
-    }
-
-    // 2. Resolve AI Tool
-    const configPath = path.join(repoPath, '.vibetree', 'config.json');
-    let config = {};
-    if (fs.existsSync(configPath)) {
-        try {
-            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        } catch (e) { }
-    }
-
-    let aiTool = argv.ai || config.aiTool;
-
-    if (!aiTool) {
-        const response = await prompts({
-            type: 'select',
-            name: 'aiTool',
-            message: 'Select AI tool to use:',
-            choices: [
-                { title: 'Claude', value: 'claude' },
-                { title: 'Codex (OpenAI)', value: 'codex' },
-                { title: 'Gemini', value: 'gemini' },
-            ],
-        });
-        aiTool = response.aiTool;
-
-        // Save preference
-        const vibeDir = path.join(repoPath, '.vibetree');
-        if (!fs.existsSync(vibeDir)) fs.mkdirSync(vibeDir, { recursive: true });
-        fs.writeFileSync(path.join(vibeDir, 'config.json'), JSON.stringify({ aiTool }, null, 2));
-    }
+    const repoPath = process.cwd();
 
     console.log(`Starting VibeTree...`);
-    console.log(`Repository: ${repoPath}`);
-    console.log(`AI Tool: ${aiTool}`);
     console.log(`Port: ${PORT}`);
 
     // 3. Start Server
-    const pkgRoot = path.join(__dirname, '..');
     const serverPath = path.join(pkgRoot, 'server', 'dist', 'index.js');
     const clientPath = path.join(pkgRoot, 'client', 'dist');
     const env = {
         ...process.env,
         REPO_PATH: repoPath,
-        AI_TOOL: aiTool,
         VIBETREE_PORT: PORT,
     };
 

@@ -90,6 +90,7 @@ function AppContent() {
       <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800 shadow-lg z-10">
         <div className="flex items-center gap-4">
           <h1 className="m-0 text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{t('app.title')}</h1>
+          <span className="text-slate-400 text-xs">v{import.meta.env.VITE_APP_VERSION}</span>
         </div>
         <div className="flex items-center gap-3">
           <LanguageSelector />

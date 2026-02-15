@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react';
-import { trpc } from '../trpc';
+import { trpc } from '../api/trpc';
 import { Repository, Task, AppConfig } from '../types';
 
 interface TaskContextType {

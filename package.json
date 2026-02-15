@@ -17,11 +17,11 @@
   },
   "keywords": [
     "git",
-    "kanban",
     "ai",
-    "workflow"
+    "workflow",
+    "task-management"
   ],
-  "author": "USER",
+  "author": "takecian",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -7,11 +7,11 @@ import { Plus, Github } from 'lucide-react';
 import { Task } from '../types';
 import { trpc } from '../trpc';
 
-interface KanbanBoardProps {
+interface TaskBoardProps {
     repoPath: string;
 }
 
-export function KanbanBoard({ repoPath }: KanbanBoardProps) {
+export function TaskBoard({ repoPath }: TaskBoardProps) {
     const { t } = useTranslation();
     const { addTask } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);

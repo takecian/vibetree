@@ -53,7 +53,7 @@ app.use(
         router: appRouter,
         createContext: (): Context => ({
             getState: () => STATE,
-            createWorktree: (repoPath, taskId, branchName) => createWorktree(repoPath, taskId, branchName, STATE.copyFiles),
+            createWorktree: (repoPath, taskId, branchName, copyFiles) => createWorktree(repoPath, taskId, branchName, copyFiles || STATE.copyFiles),
             ensureTerminalForTask: (taskId, repoPath) => ensureTerminalForTask(taskId, repoPath),
             runAiForTask: (taskId, repoPath) => runAiForTask(taskId, repoPath),
             removeWorktree: (repoPath, taskId, branchName) => import('./services/git').then(m => m.removeWorktree(repoPath, taskId, branchName)),

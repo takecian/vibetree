@@ -70,6 +70,18 @@ export const appRouter = router({
         .mutation(async ({ input }) => {
             return addRepository(input.path, input.copyFiles);
         }),
+    updateRepository: publicProcedure
+        .input(z.object({
+            id: z.string(),
+            updates: z.object({
+                path: z.string().optional(),
+                copyFiles: z.string().optional(),
+            }),
+        }))
+        .mutation(async ({ input }) => {
+            const { updateRepository } = await import('../services/db');
+            return updateRepository(input.id, input.updates);
+        }),
 
     // Task Procedures
     getTasks: publicProcedure
@@ -101,7 +113,7 @@ export const appRouter = router({
             if (input.repoPath && ctx.createWorktree && ctx.ensureTerminalForTask && ctx.runAiForTask) {
                 try {
                     console.log(`[tRPC] Creating worktree for task ${newTask.id} in ${input.repoPath}`);
-                    await ctx.createWorktree(input.repoPath, newTask.id, newTask.branchName || '');
+                    await ctx.createWorktree(input.repoPath, newTask.id, newTask.branchName || '', repo.copyFiles || '');
 
                     console.log(`[tRPC] Ensuring terminal for task ${newTask.id}`);
                     await ctx.ensureTerminalForTask(newTask.id, input.repoPath);

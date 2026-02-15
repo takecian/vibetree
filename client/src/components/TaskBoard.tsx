@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useTasks } from '../context/TaskContext';
 import { CreateTaskModal } from './CreateTaskModal';
 import { TaskDetail } from './TaskDetail';
-import { Plus, Github } from 'lucide-react';
+import { Plus, Github, Settings } from 'lucide-react';
 import { Task } from '../types';
 import { trpc } from '../trpc';
+import { RepoModal } from './RepoModal';
 
 interface TaskBoardProps {
     repoPath: string;
@@ -13,12 +14,15 @@ interface TaskBoardProps {
 
 export function TaskBoard({ repoPath }: TaskBoardProps) {
     const { t } = useTranslation();
-    const { addTask } = useTasks();
+    const { addTask, repositories, updateRepository } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+    const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
     // Fetch tasks for this specific repo
     const { data: tasks = [], isLoading: tasksLoading } = trpc.getTasks.useQuery({ repoPath });
+
+    const currentRepo = repositories.find(r => r.path === repoPath);
 
     // Default to the first task if none selected
     useEffect(() => {
@@ -31,6 +35,13 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
         await addTask(repoPath, title, description);
     };
 
+    const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string) => {
+        if (currentRepo) {
+            await updateRepository(currentRepo.id, { path, copyFiles });
+            setIsRepoSettingsOpen(false);
+        }
+    };
+
     return (
         <div className="flex-1 flex flex-col bg-slate-900 text-slate-50 relative overflow-hidden">
             {isCreateModalOpen && (
@@ -40,17 +51,36 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
                 />
             )}
 
+            {isRepoSettingsOpen && currentRepo && (
+                <RepoModal
+                    onSave={handleUpdateRepo}
+                    initialConfig={{ ...currentRepo, repoPath: currentRepo.path, aiTool: '' }}
+                    onClose={() => setIsRepoSettingsOpen(false)}
+                    hideAiAssistant={true}
+                />
+            )}
+
             <div className="flex flex-1 overflow-hidden">
                 {/* Task List Sidebar */}
                 <div className="w-80 flex flex-col border-r border-slate-700 bg-slate-800/40 backdrop-blur-sm overflow-hidden">
                     <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t('taskList.title')} ({tasks.length})</span>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-blue-600/20 text-blue-400 border border-blue-500/30 p-1.5 rounded-md hover:bg-blue-600/30 transition-colors"
-                        >
-                            <Plus size={14} />
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsRepoSettingsOpen(true)}
+                                className="bg-slate-700/40 text-slate-400 border border-slate-600/50 p-1.5 rounded-md hover:bg-slate-700 hover:text-slate-200 transition-colors"
+                                title="Repository Settings"
+                            >
+                                <Settings size={14} />
+                            </button>
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="bg-blue-600/20 text-blue-400 border border-blue-500/30 p-1.5 rounded-md hover:bg-blue-600/30 transition-colors"
+                                title={t('taskList.addTask')}
+                            >
+                                <Plus size={14} />
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
                         {tasksLoading ? (

@@ -10,6 +10,7 @@ interface TaskContextType {
     addTask: (repoPath: string, title: string, description: string) => Promise<Task>;
     deleteTask: (repoPath: string, taskId: string) => Promise<void>;
     addRepository: (path: string, copyFiles?: string) => Promise<Repository>;
+    updateRepository: (id: string, updates: { path?: string; copyFiles?: string }) => Promise<Repository>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -49,12 +50,22 @@ export function TaskProvider({ children }: TaskProviderProps) {
         }
     });
 
+    const updateRepositoryMutation = trpc.updateRepository.useMutation({
+        onSuccess: () => {
+            utils.getRepositories.invalidate();
+        }
+    });
+
     const updateConfig = async (updates: Partial<AppConfig>) => {
         await updateConfigMutation.mutateAsync(updates);
     };
 
     const addRepository = async (path: string, copyFiles?: string): Promise<Repository> => {
         return await addRepositoryMutation.mutateAsync({ path, copyFiles });
+    };
+
+    const updateRepository = async (id: string, updates: { path?: string; copyFiles?: string }): Promise<Repository> => {
+        return await updateRepositoryMutation.mutateAsync({ id, updates });
     };
 
     const addTask = async (repoPath: string, title: string, description: string): Promise<Task> => {
@@ -73,6 +84,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
         addTask,
         deleteTask,
         addRepository,
+        updateRepository,
     };
 
     return (

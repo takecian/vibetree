@@ -45,8 +45,8 @@ npm run dev
 ```
 
 This starts:
-- Server on `http://localhost:3000` (or `VIBE_FLOW_PORT` from `.env`)
-- Client on `http://localhost:5179` (Vite dev server)
+- Server on `http://localhost:3000` (or `VIBETREE_PORT` from `.env`)
+- Client on `http://localhost:5173` (Vite dev server)
 
 The client proxies API requests to the server during development.
 
@@ -253,10 +253,10 @@ vibetree/
 Create a `.env` file in the root directory (not committed to Git):
 
 ```
-VIBE_FLOW_PORT=3000
+VIBETREE_PORT=3000
 ```
 
-- `VIBE_FLOW_PORT`: Server port (default: 3000)
+- `VIBETREE_PORT`: Server port (default: 3000)
 
 ## Troubleshooting
 
@@ -264,7 +264,7 @@ VIBE_FLOW_PORT=3000
 
 - **TypeScript errors**: Check `tsconfig.json` configuration
 - **Missing dependencies**: Run `npm install` in the root directory
-- **Port conflicts**: Change `VIBE_FLOW_PORT` in `.env`
+- **Port conflicts**: Change `VIBETREE_PORT` in `.env`
 
 ### Development Server Issues
 

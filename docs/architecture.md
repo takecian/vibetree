@@ -24,7 +24,7 @@ Vibetree is a local AI-enhanced task manager designed for developers to seamless
 - **Zod**: Runtime schema validation
 - **TypeScript**: Type-safe development (compiled to JavaScript)
 - **Socket.IO**: Real-time communication with clients
-- **LowDB 7**: Lightweight JSON-based database
+- **SQLite**: Lightweight SQLite database
 - **node-pty**: Pseudo-terminal handling
 - **CORS**: Cross-origin resource sharing
 
@@ -141,8 +141,8 @@ vibetree/
 - Handles application-wide configurations and settings.
 
 #### `server/src/services/db.ts` - Data Persistence Service
-- LowDB initialization
-- JSON-based database operations
+- SQLite initialization
+- SQLite database operations
 
 #### `server/src/services/git.ts` - Git Service
 - Pure helper functions for Git logic (worktree, status, diff)
@@ -194,6 +194,28 @@ vibetree/
 - specialized UI components
 - `TaskDetail` fetches Git Diff directly via `trpc.getGitDiff.useQuery`
 - `RepoModal` uses `trpc.pickFolder.useMutation`
+
+## Database Schema
+
+```mermaid
+erDiagram
+    repositories {
+        TEXT id PK
+        TEXT path
+        TEXT copy_files
+    }
+
+    tasks {
+        TEXT id PK
+        TEXT repository_id FK
+        TEXT title
+        TEXT description
+        TEXT branch_name
+        TEXT created_at
+    }
+
+    repositories ||--|{ tasks : "has"
+```
 
 ## Data Flow
 

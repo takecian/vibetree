@@ -1,5 +1,5 @@
 import { TaskProvider, useTasks } from './context/TaskContext';
-import { KanbanBoard } from './components/KanbanBoard';
+import { TaskBoard } from './components/TaskBoard';
 import { RepoModal } from './components/RepoModal';
 import { Tabs } from './components/Tabs';
 import { TerminalProvider } from './context/TerminalContext';
@@ -114,7 +114,7 @@ function AppContent() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTabId ? (
-          <KanbanBoard repoPath={activeTabId} />
+          <TaskBoard repoPath={activeTabId} />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             <h2 className="text-xl font-light mb-4">No Repository Open</h2>

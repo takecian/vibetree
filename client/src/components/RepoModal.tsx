@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { trpc } from '../trpc';
+import { trpc } from '../api/trpc';
 import { FolderOpen } from 'lucide-react';
 import { AppConfig } from '../types';
 

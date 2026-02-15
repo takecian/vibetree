@@ -5,7 +5,7 @@ import { CreateTaskModal } from './CreateTaskModal';
 import { TaskDetail } from './TaskDetail';
 import { Plus, Github, Settings } from 'lucide-react';
 import { Task } from '../types';
-import { trpc } from '../trpc';
+import { trpc } from '../api/trpc';
 import { RepoModal } from './RepoModal';
 
 interface TaskBoardProps {

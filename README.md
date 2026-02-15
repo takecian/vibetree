@@ -41,7 +41,7 @@ The app will start and automatically open in your default browser at `http://loc
 
 ## Prerequisites
 
-- **Node.js**: (v16+ recommended)
+- **Node.js**: (v24 recommended)
 - **Git**: Installed and configured.
 - **AI Tools** (Optional but recommended):
     - `claude` (Claude CLI)

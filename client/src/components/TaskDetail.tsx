@@ -8,7 +8,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { CreatePRModal } from './CreatePRModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
-import { trpc } from '../trpc';
+import { trpc } from '../api/trpc';
 
 interface TaskDetailProps {
     taskId: string;

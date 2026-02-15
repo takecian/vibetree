@@ -4,7 +4,7 @@ import { RepoModal } from './components/RepoModal';
 import { Tabs } from './components/Tabs';
 import { TerminalProvider } from './context/TerminalContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { trpc } from './trpc';
+import { trpc } from './api/trpc';
 import { httpBatchLink } from '@trpc/client';
 import { LanguageSelector } from './components/LanguageSelector';
 import { useTranslation } from 'react-i18next';

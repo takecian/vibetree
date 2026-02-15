@@ -13,7 +13,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client && npm run build -w server",
-    "start": "node bin/vibetree.js"
+    "start": "node bin/vibetree.js",
+    "postinstall": "if [ \"$(uname)\" = \"Darwin\" ]; then chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper 2>/dev/null || true; chmod +x node_modules/node-pty/prebuilds/darwin-x64/spawn-helper 2>/dev/null || true; fi"
   },
   "keywords": [
     "git",
@@ -35,7 +36,7 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "lowdb": "^7.0.1",
-    "node-pty": "0.10.1",
+    "node-pty": "1.1.0",
     "socket.io": "^4.8.3",
     "uuid": "^13.0.0",
     "ws": "^8.19.0",

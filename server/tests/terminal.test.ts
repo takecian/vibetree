@@ -27,7 +27,7 @@ describe('terminal', () => {
                 description: 'Test Description',
                 repositoryId: 'repo-1',
                 branchName: 'feature/test',
-            }));
+            })) as (taskId: string, repoPath: string) => Promise<any>;
         });
 
         it('should create terminal session management', () => {
@@ -39,12 +39,16 @@ describe('terminal', () => {
             expect(terminalService.shutdownTerminalForTask).toBeDefined();
         });
 
-        it('should handle terminal session buffer management', async () => {
+        // Note: More comprehensive terminal buffer testing would require mocking node-pty
+        // and Socket.IO connections, which is complex. The buffer functionality is
+        // implicitly tested through the integration with the actual application.
+        it('should expose terminal management functions', () => {
             const terminalService = setupTerminal(io, mockGetState, mockGetTaskById);
             
-            // This test verifies that the terminal service is set up
-            // Actual buffer testing requires mocking the PTY and socket
-            expect(terminalService).toBeDefined();
+            // Verify all expected functions are exposed
+            expect(typeof terminalService.ensureTerminalForTask).toBe('function');
+            expect(typeof terminalService.runAiForTask).toBe('function');
+            expect(typeof terminalService.shutdownTerminalForTask).toBe('function');
         });
     });
 });

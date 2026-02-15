@@ -93,6 +93,7 @@ The app will start and automatically open in your default browser at `http://loc
 -   `client/`: React frontend (Vite) - TypeScript with `.tsx` components.
 -   `server/`: Express.js backend - TypeScript compiled to `dist/`.
 -   `bin/`: CLI entry point.
+-   `.entire/`: Internal configurations and logs for the Vibetree CLI.
 
 ## License
 

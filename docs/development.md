@@ -6,13 +6,12 @@ This guide covers the essential steps and rules for developing Vibetree.
 
 Before you begin development, ensure you have the following installed:
 
-- **Node.js**: v18 or higher (LTS recommended)
+- **Node.js**: v24 or higher (as specified in `.node-version`)
 - **npm**: v7 or higher (comes with Node.js)
 - **Git**: For version control and testing Git integration features
 - **AI Tools** (Optional, for testing AI features):
   - `claude` (Claude CLI)
   - `gemini` (Gemini CLI)
-  - `codex`
 
 ## Initial Setup
 
@@ -26,7 +25,7 @@ Before you begin development, ensure you have the following installed:
    ```bash
    npm install
    ```
-   This installs dependencies for the root, client, and server workspaces using npm workspaces.
+   This installs dependencies for the root, client, and server workspaces using npm workspaces. Note that some dependencies in the root `package.json` should ideally be moved to the respective workspaces.
 
 3. **Build the project**:
    ```bash
@@ -49,6 +48,8 @@ This starts:
 - Client on `http://localhost:5173` (Vite dev server)
 
 The client proxies API requests to the server during development.
+
+The server development script uses `tsc --watch & node --watch dist/index.js`.
 
 ### Building for Production
 
@@ -109,11 +110,12 @@ vibetree/
 │   │   └── types.ts       # Type definitions
 │   └── package.json       # Client dependencies
 ├── server/                 # Express.js backend
-│   ├── db.ts              # Database (LowDB)
-│   ├── git.ts             # Git operations
-│   ├── router.ts          # tRPC router
-│   ├── tasks.ts           # Task helpers
-│   ├── terminal.ts        # Terminal management
+│   ├── src/
+│   │   ├── services/
+│   │   │   ├── db.ts      # Database (better-sqlite3)
+│   │   │   ├── git.ts     # Git operations
+│   │   │   ├── tasks.ts   # Task helpers
+│   │   │   └── terminal.ts# Terminal management
 │   └── package.json       # Server dependencies
 ├── docs/                   # Documentation
 └── package.json           # Root workspace config
@@ -146,7 +148,7 @@ vibetree/
 
 1. **tRPC for API**:
    - All client-server communication uses tRPC (except terminals)
-   - Define procedures in `server/router.ts`
+   - Define procedures in `server/src/api/router.ts`
    - Use Zod schemas for input validation
    - Export `AppRouter` type for client consumption
 
@@ -157,13 +159,13 @@ vibetree/
 
 3. **Socket.IO for Terminals**:
    - Use Socket.IO for real-time terminal communication
-   - Keep terminal logic in `server/terminal.ts`
+   - Keep terminal logic in `server/src/services/terminal.ts`
    - Use xterm.js on the client
 
 4. **Database**:
-   - Use LowDB for simple JSON-based persistence
-   - Database file: `db.json` (git-ignored)
-   - Define schemas in `server/types.ts`
+   - Use `better-sqlite3` for persistence.
+   - The database file is located at `~/.vibetree/vibetree.db`.
+   - Define schemas in `server/src/types/index.ts` and migrations in `server/src/services/db.ts`.
 
 ### Git Practices
 
@@ -220,7 +222,7 @@ vibetree/
 
 ### Adding a New tRPC Procedure
 
-1. Define the procedure in `server/router.ts`:
+1. Define the procedure in `server/src/api/router.ts`:
    ```typescript
    myProcedure: publicProcedure
      .input(z.object({ ... }))
@@ -243,10 +245,9 @@ vibetree/
 
 ### Modifying the Database Schema
 
-1. Update type definitions in `server/types.ts`
-2. Update database initialization in `server/db.ts`
-3. Add migration logic if needed for existing data
-4. Update related tRPC procedures
+1. Update type definitions in `server/src/types/index.ts`
+2. Update the schema and any migration logic in `server/src/services/db.ts`
+3. Update related tRPC procedures
 
 ## Environment Variables
 

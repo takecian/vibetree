@@ -8,7 +8,8 @@
     "delete": "削除",
     "confirm": "確認",
     "settings": "設定",
-    "noRepository": "リポジトリなし"
+    "noRepository": "リポジトリなし",
+    "loading": "読み込み中"
   },
   "header": {
     "newTask": "新しいタスク"
@@ -22,6 +23,17 @@
     "titlePlaceholder": "タスク名",
     "descriptionPlaceholder": "タスクの説明（オプション）",
     "createButton": "タスクを作成"
+  },
+  "createPR": {
+    "title": "プルリクエストを作成",
+    "titleLabel": "PRタイトル",
+    "titlePlaceholder": "PRタイトルを入力",
+    "descriptionLabel": "PRの説明",
+    "descriptionPlaceholder": "PRの説明を入力",
+    "baseBranchLabel": "ベースブランチ",
+    "baseBranchPlaceholder": "例: main",
+    "loadingDefaultBranch": "デフォルトブランチを読み込み中...",
+    "createButton": "PRを作成"
   },
   "repoModal": {
     "title": "設定",
@@ -49,6 +61,14 @@
       "message": "タスク「{{title}}」を削除してもよろしいですか？これによりgitワークツリーも削除され、元に戻すことはできません。",
       "confirm": "削除"
     },
+    "rebase": "リベース",
+    "createPR": "PR作成",
+    "push": "プッシュ",
+    "rebaseConfirmation": {
+      "title": "タスクをリベース",
+      "message": "このタスクをデフォルトブランチにリベースしてもよろしいですか？",
+      "confirm": "リベース"
+    },
     "description": "説明",
     "openInFinder": "ファインダーで開く",
     "copyPath": "パスをコピー",
@@ -60,6 +80,8 @@
     },
     "diffLoading": "差分を読み込み中...",
     "diffEmpty": "変更が検出されませんでした",
-    "diffError": "差分の読み込みに失敗しました"
+    "diffError": "差分の読み込みに失敗しました",
+    "viewPR": "プルリクエストを表示",
+    "pullRequest": "プルリクエスト"
   }
 }

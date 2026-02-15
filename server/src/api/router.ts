@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
 import { v4 as uuidv4 } from 'uuid';
 import { Task } from '../types';
-import { createWorktree, runGit } from '../services/git';
+import { createWorktree, runGit, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch } from '../services/git';
+import { generatePRSummary } from '../services/ai';
 import { exec } from 'child_process';
 import util from 'util';
 import os from 'os';
@@ -198,6 +199,73 @@ export const appRouter = router({
         .query(({ input }) => {
             const worktreePath = path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId);
             return { path: worktreePath };
+        }),
+
+    rebase: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+            baseBranch: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            return rebase(input.repoPath, input.taskId, input.baseBranch);
+        }),
+
+    createPR: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+            title: z.string(),
+            body: z.string().optional(),
+            baseBranch: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            const result = await createPR(input.repoPath, input.taskId, {
+                title: input.title,
+                body: input.body,
+                baseBranch: input.baseBranch,
+            });
+
+            if (result.success && result.url) {
+                // Save PR URL to task
+                updateTask(input.taskId, { prUrl: result.url });
+            }
+
+            return result;
+        }),
+
+    push: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+            commitMessage: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            return pushBranch(input.repoPath, input.taskId, input.commitMessage);
+        }),
+
+    syncPRWithAI: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+            const state = ctx.getState();
+            if (!state.aiTool) throw new Error("AI tool not configured");
+
+            const baseBranch = await getDefaultBranch(input.repoPath);
+            const diff = await getBranchDiff(input.repoPath, input.taskId, baseBranch);
+
+            if (!diff) return { success: true, message: "No changes found" };
+
+            const summary = await generatePRSummary(state.aiTool, diff);
+            return updatePR(input.repoPath, input.taskId, summary);
+        }),
+
+    getDefaultBranch: publicProcedure
+        .input(z.object({ repoPath: z.string() }))
+        .query(async ({ input }) => {
+            return getDefaultBranch(input.repoPath);
         }),
 
     // System Procedures

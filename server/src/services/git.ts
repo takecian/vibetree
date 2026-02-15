@@ -105,4 +105,108 @@ async function removeWorktree(repoPath: string, taskId: string, branchName?: str
     }
 }
 
-export { createWorktree, runGit, removeWorktree };
+async function rebase(repoPath: string, taskId: string, baseBranch: string): Promise<{ success: boolean; message?: string }> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+    await runGit(`git rebase ${baseBranch}`, worktreePath, repoPath);
+    return { success: true };
+}
+
+async function createPR(repoPath: string, taskId: string, prData: { title: string; body?: string; baseBranch: string }): Promise<{ success: boolean; url?: string; message?: string }> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+
+    // Stage and commit changes first
+    try {
+        await runGit('git add .', worktreePath, repoPath);
+        const status = await runGit('git status --porcelain', worktreePath, repoPath);
+        if (status) {
+            await runGit(`git commit -m ${JSON.stringify(prData.title)}`, worktreePath, repoPath);
+        }
+    } catch (e: any) {
+        console.warn(`Failed to stage/commit: ${e.message}`);
+        // Continue anyway, maybe it's already committed
+    }
+
+    // Push branch
+    try {
+        await runGit('git push origin HEAD', worktreePath, repoPath);
+    } catch (e: any) {
+        throw new Error(`Failed to push branch: ${e.message}`);
+    }
+
+    // Create PR using gh CLI
+    try {
+        const bodyArg = prData.body ? `--body ${JSON.stringify(prData.body)}` : '';
+        const titleArg = `--title ${JSON.stringify(prData.title)}`;
+        const command = `gh pr create ${titleArg} ${bodyArg} --base ${JSON.stringify(prData.baseBranch)}`;
+        const output = await runGit(command, worktreePath, repoPath);
+
+        // Extract URL - usually it's the last line of output
+        const lines = output.split('\n');
+        const url = lines[lines.length - 1].trim();
+        return { success: true, url };
+    } catch (e: any) {
+        throw new Error(`Failed to create PR: ${e.message}`);
+    }
+}
+
+async function pushBranch(repoPath: string, taskId: string, commitMessage: string): Promise<{ success: boolean; message?: string }> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+
+    try {
+        await runGit('git add .', worktreePath, repoPath);
+        const status = await runGit('git status --porcelain', worktreePath, repoPath);
+        if (status) {
+            await runGit(`git commit -m ${JSON.stringify(commitMessage)}`, worktreePath, repoPath);
+        }
+        await runGit('git push origin HEAD', worktreePath, repoPath);
+        return { success: true };
+    } catch (e: any) {
+        throw new Error(`Failed to push: ${e.message}`);
+    }
+}
+
+async function getBranchDiff(repoPath: string, taskId: string, baseBranch: string): Promise<string> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+    // Get diff between base branch and current HEAD
+    return await runGit(`git diff ${baseBranch}...HEAD`, worktreePath, repoPath);
+}
+
+async function updatePR(repoPath: string, taskId: string, prData: { title?: string; body?: string }): Promise<{ success: boolean; message?: string }> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+
+    try {
+        const titleArg = prData.title ? `--title ${JSON.stringify(prData.title)}` : '';
+        const bodyArg = prData.body ? `--body ${JSON.stringify(prData.body)}` : '';
+        await runGit(`gh pr edit ${titleArg} ${bodyArg}`, worktreePath, repoPath);
+        return { success: true };
+    } catch (e: any) {
+        throw new Error(`Failed to update PR: ${e.message}`);
+    }
+}
+
+async function getDefaultBranch(repoPath: string): Promise<string> {
+    try {
+        const output = await runGit('git remote show origin', repoPath, repoPath);
+        const match = output.match(/HEAD branch: (.+)/);
+        return match ? match[1] : 'main';
+    } catch (e) {
+        return 'main';
+    }
+}
+
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch };

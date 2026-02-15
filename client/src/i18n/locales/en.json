@@ -8,7 +8,8 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "settings": "Settings",
-    "noRepository": "No Repository"
+    "noRepository": "No Repository",
+    "loading": "Loading"
   },
   "header": {
     "newTask": "New Task"
@@ -22,6 +23,17 @@
     "titlePlaceholder": "Task Title",
     "descriptionPlaceholder": "Task Description (optional)",
     "createButton": "Create Task"
+  },
+  "createPR": {
+    "title": "Create Pull Request",
+    "titleLabel": "PR Title",
+    "titlePlaceholder": "Enter PR title",
+    "descriptionLabel": "PR Description",
+    "descriptionPlaceholder": "Enter PR description",
+    "baseBranchLabel": "Base Branch",
+    "baseBranchPlaceholder": "e.g. main",
+    "loadingDefaultBranch": "Loading default branch...",
+    "createButton": "Create PR"
   },
   "repoModal": {
     "title": "Configuration",
@@ -49,6 +61,14 @@
       "message": "Are you sure you want to delete the task \"{{title}}\"? This will also delete the git worktree and cannot be undone.",
       "confirm": "Delete"
     },
+    "rebase": "Rebase",
+    "createPR": "Create PR",
+    "push": "Push",
+    "rebaseConfirmation": {
+      "title": "Rebase Task",
+      "message": "Are you sure you want to rebase this task onto the default branch?",
+      "confirm": "Rebase"
+    },
     "description": "Description",
     "openInFinder": "Open in Finder",
     "copyPath": "Copy Path",
@@ -60,6 +80,8 @@
     },
     "diffLoading": "Loading diff...",
     "diffEmpty": "No changes detected",
-    "diffError": "Failed to load diff"
+    "diffError": "Failed to load diff",
+    "viewPR": "View Pull Request",
+    "pullRequest": "Pull Request"
   }
 }

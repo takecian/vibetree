@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
-import { runGit, createWorktree } from '../src/services/git';
+import { runGit, createWorktree, getDefaultBranch, rebase } from '../src/services/git';
 
 const execAsync = util.promisify(exec);
 
@@ -174,6 +174,35 @@ describe('git', () => {
       expect(result.success).toBe(true);
       const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
       expect(fs.existsSync(path.join(worktreePath, 'somedir'))).toBe(false);
+    });
+  });
+
+  describe('getDefaultBranch', () => {
+    it('should return the default branch name', async () => {
+      const result = await getDefaultBranch(testRepoPath);
+      expect(['master', 'main']).toContain(result);
+    });
+  });
+
+  describe('rebase', () => {
+    it('should rebase the current branch onto another branch', async () => {
+      const taskId = 'test-rebase-task';
+      const branchName = 'feature/rebase-test';
+
+      await createWorktree(testRepoPath, taskId, branchName);
+      const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
+
+      fs.writeFileSync(path.join(testRepoPath, 'main-change.txt'), 'main content');
+      await execAsync('git add .', { cwd: testRepoPath });
+      await execAsync('git commit -m "Main change"', { cwd: testRepoPath });
+
+      const mainBranch = await getDefaultBranch(testRepoPath);
+
+      const result = await rebase(testRepoPath, taskId, mainBranch);
+      expect(result.success).toBe(true);
+
+      const { stdout } = await execAsync('git log --oneline', { cwd: worktreePath });
+      expect(stdout).toContain('Main change');
     });
   });
 });

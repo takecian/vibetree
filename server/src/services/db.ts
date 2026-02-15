@@ -29,10 +29,22 @@ db.exec(`
         title TEXT NOT NULL,
         description TEXT,
         branch_name TEXT,
+        pr_url TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
     );
 `);
+
+// Simple migration check for existing databases
+try {
+    db.exec("ALTER TABLE tasks ADD COLUMN pr_url TEXT");
+    console.log("[DB] Added pr_url column to tasks table");
+} catch (e: any) {
+    // If it fails, it likely already exists
+    if (!e.message.includes('duplicate column name')) {
+        console.error("[DB] Migration failed:", e.message);
+    }
+}
 
 export function normalizePath(p: string): string {
     return p ? p.replace(/[/\\]+$/, '') : '';
@@ -126,6 +138,7 @@ export function getTasks(repositoryId: string | null): Task[] {
         title: row.title,
         description: row.description || '',
         branchName: row.branch_name || '',
+        prUrl: row.pr_url || '',
         createdAt: row.created_at
     }));
 }
@@ -139,6 +152,7 @@ export function getTaskById(id: string): Task | undefined {
         title: row.title,
         description: row.description || '',
         branchName: row.branch_name || '',
+        prUrl: row.pr_url || '',
         createdAt: row.created_at
     };
 }
@@ -151,9 +165,9 @@ export function createTask(repositoryId: string, task: Partial<Task>): Task {
     const createdAt = task.createdAt || new Date().toISOString();
 
     db.prepare(`
-        INSERT INTO tasks (id, repository_id, title, description, branch_name, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, repositoryId, title, description, branchName, createdAt);
+        INSERT INTO tasks (id, repository_id, title, description, branch_name, pr_url, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, repositoryId, title, description, branchName, task.prUrl || '', createdAt);
 
     return {
         id,
@@ -161,6 +175,7 @@ export function createTask(repositoryId: string, task: Partial<Task>): Task {
         title,
         description,
         branchName,
+        prUrl: task.prUrl || '',
         createdAt
     };
 }
@@ -180,6 +195,10 @@ export function updateTask(id: string, updates: Partial<Task>): Task {
     if (updates.branchName !== undefined) {
         fields.push('branch_name = ?');
         values.push(updates.branchName);
+    }
+    if (updates.prUrl !== undefined) {
+        fields.push('pr_url = ?');
+        values.push(updates.prUrl);
     }
 
     if (fields.length > 0) {

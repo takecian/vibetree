@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
-import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy } from 'lucide-react';
+import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy, GitPullRequest, RefreshCw } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
+import { CreatePRModal } from './CreatePRModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
 import { trpc } from '../trpc';
@@ -28,6 +29,8 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const [activeTab, setActiveTab] = useState<'terminal' | 'details' | 'diff'>('terminal');
     const [showOptionsMenu, setShowOptionsMenu] = useState<boolean>(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
+    const [isCreatePRModalOpen, setCreatePRModalOpen] = useState<boolean>(false);
+    const [isRebaseModalOpen, setRebaseModalOpen] = useState<boolean>(false);
 
     // tRPC Queries
     const { data: diffData, isLoading: loadingDiff } = trpc.getGitDiff.useQuery(
@@ -39,6 +42,11 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         { enabled: !!effectiveId }
     );
     const openDirectory = trpc.openDirectory.useMutation();
+    const createPRMutation = trpc.createPR.useMutation();
+    const pushMutation = trpc.push.useMutation();
+    const syncPRWithAI = trpc.syncPRWithAI.useMutation();
+    const rebaseMutation = trpc.rebase.useMutation();
+    const utils = trpc.useUtils();
 
 
     if (!task) return null; // Don't show loading in sidebar, just null if not found
@@ -91,6 +99,74 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         }
     };
 
+    const handleRebase = () => {
+        setShowOptionsMenu(false);
+        setRebaseModalOpen(true);
+    };
+
+    const handleConfirmRebase = async () => {
+        try {
+            const defaultBranch = await utils.getDefaultBranch.fetch({ repoPath });
+            await rebaseMutation.mutateAsync({ repoPath, taskId: effectiveId, baseBranch: defaultBranch });
+            setRebaseModalOpen(false);
+            // Refresh diff after rebase
+            utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
+        } catch (e) {
+            console.error('Rebase failed', e);
+        }
+    };
+
+    const handlePush = async () => {
+        setShowOptionsMenu(false);
+        try {
+            await pushMutation.mutateAsync({
+                repoPath,
+                taskId: effectiveId,
+                commitMessage: task.title
+            });
+
+            // Automatically sync PR summary using AI
+            try {
+                await syncPRWithAI.mutateAsync({ repoPath, taskId: effectiveId });
+            } catch (aiErr) {
+                console.warn('AI PR Sync failed', aiErr);
+                // Don't fail the whole push if AI fails
+            }
+
+            // Refresh diff and status after push
+            utils.getGitStatus.invalidate({ repoPath, taskId: effectiveId });
+            utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
+            utils.getTasks.invalidate({ repoPath });
+        } catch (e) {
+            console.error('Push failed', e);
+        }
+    };
+
+    const handleCreatePR = () => {
+        setShowOptionsMenu(false);
+        setCreatePRModalOpen(true);
+    };
+
+    const handleConfirmCreatePR = async (title: string, body: string, baseBranch: string) => {
+        try {
+            const result = await createPRMutation.mutateAsync({
+                repoPath,
+                taskId: effectiveId,
+                title,
+                body,
+                baseBranch
+            });
+            if (result.success && result.url) {
+                window.open(result.url, '_blank');
+            }
+            // Refresh tasks to get the new prUrl
+            utils.getTasks.invalidate({ repoPath });
+            setCreatePRModalOpen(false);
+        } catch (e) {
+            console.error('Failed to create PR', e);
+        }
+    };
+
     return (
         <div className={containerClasses}>
             <header className="px-6 py-4 border-b border-slate-600 flex items-center gap-4 bg-slate-800">
@@ -101,6 +177,18 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 )}
                 <div className="flex-1 flex items-center gap-3">
                     <h1 className="m-0 text-lg font-semibold">{task.title}</h1>
+                    {task.prUrl && (
+                        <a
+                            href={task.prUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md text-xs font-medium hover:bg-blue-500/20 transition-colors no-underline"
+                            title={t('taskDetail.viewPR')}
+                        >
+                            <GitPullRequest size={12} />
+                            PR
+                        </a>
+                    )}
                 </div>
                 <div className="flex gap-3 relative">
                     <button className={getTabButtonClasses(activeTab === 'details')} onClick={() => setActiveTab('details')}>
@@ -117,8 +205,20 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                             <MoreVertical size={18} />
                         </button>
                         {showOptionsMenu && (
-                            <div className="absolute top-full right-0 bg-slate-800 border border-slate-600 rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.2)] min-w-[120px] z-10 overflow-hidden mt-2">
-                                <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600">
+                            <div className="absolute top-full right-0 bg-slate-800 border border-slate-600 rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.2)] min-w-[160px] z-10 overflow-hidden mt-2">
+                                <button onClick={handleRebase} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
+                                    <RefreshCw size={16} className={rebaseMutation.isPending ? 'animate-spin' : ''} /> {t('taskDetail.rebase')}
+                                </button>
+                                {task.prUrl ? (
+                                    <button onClick={handlePush} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
+                                        <GitPullRequest size={16} className={pushMutation.isPending ? 'text-blue-400 animate-pulse' : ''} /> {t('taskDetail.push')}
+                                    </button>
+                                ) : (
+                                    <button onClick={handleCreatePR} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
+                                        <GitPullRequest size={16} className={createPRMutation.isPending ? 'text-blue-400' : ''} /> {t('taskDetail.createPR')}
+                                    </button>
+                                )}
+                                <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-red-400 cursor-pointer text-left text-sm hover:bg-slate-600">
                                     <Trash2 size={16} /> {t('taskDetail.delete')}
                                 </button>
                             </div>
@@ -147,7 +247,22 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                 {t('taskDetail.copyPath')}
                             </button>
                         </div>
-                        <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>
+                        <p className="whitespace-pre-wrap leading-relaxed text-slate-50 mb-6">{task.description || 'No description provided.'}</p>
+
+                        {task.prUrl && (
+                            <div className="mt-6 pt-6 border-t border-slate-700">
+                                <h3 className="mt-0 mb-3 text-sm text-slate-400 uppercase tracking-wider">{t('taskDetail.pullRequest')}</h3>
+                                <a
+                                    href={task.prUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors no-underline text-sm font-medium"
+                                >
+                                    <GitPullRequest size={16} />
+                                    {task.prUrl}
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -177,6 +292,28 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 >
                     <p>{t('taskDetail.deleteConfirmation.message', { title: task.title })}</p>
                 </ConfirmationModal>
+            )}
+
+            {isRebaseModalOpen && (
+                <ConfirmationModal
+                    onClose={() => setRebaseModalOpen(false)}
+                    onConfirm={handleConfirmRebase}
+                    title={t('taskDetail.rebaseConfirmation.title')}
+                    confirmText={t('taskDetail.rebaseConfirmation.confirm')}
+                >
+                    <p>{t('taskDetail.rebaseConfirmation.message')}</p>
+                </ConfirmationModal>
+            )}
+
+            {isCreatePRModalOpen && (
+                <CreatePRModal
+                    repoPath={repoPath}
+                    initialTitle={task.title}
+                    initialDescription={task.description}
+                    isCreating={createPRMutation.isPending}
+                    onClose={() => setCreatePRModalOpen(false)}
+                    onCreate={handleConfirmCreatePR}
+                />
             )}
         </div>
     );

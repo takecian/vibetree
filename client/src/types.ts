@@ -13,6 +13,7 @@ export interface Task {
     description: string;
     createdAt: string;
     branchName?: string;
+    prUrl?: string;
 }
 
 export interface AppConfig {

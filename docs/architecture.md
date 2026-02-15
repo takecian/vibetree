@@ -155,6 +155,10 @@ vibetree/
 #### `server/src/services/terminal.ts` - Terminal Emulation Service
 - Pseudo-terminal (PTY) management via `node-pty`
 - Socket.IO handlers for terminal events
+- Terminal session buffering for reconnection support:
+  - Maintains output buffer (up to 1000 entries) for each terminal session
+  - Automatically sends buffered data when client reconnects
+  - Survives page reloads (F5) and socket disconnections
 
 #### `server/src/types/index.ts` - Shared Type Definitions
 - Contains TypeScript type definitions shared across server modules.
@@ -205,7 +209,22 @@ vibetree/
 9. **Cache Update**: TanStack Query updates client cache, triggering re-renders
 
 ### Real-time Terminal Flow
-(Unchanged from previous architecture - uses pure Socket.IO)
+1. **Client Request**: Component calls `useTerminals().getTerminalSession(taskId, repoPath)`
+2. **Socket Creation**: If no session exists, creates Socket.IO connection with reconnection config
+3. **Terminal Instance**: Creates xterm.js Terminal instance
+4. **PTY Spawn**: Server spawns PTY process for the task's worktree
+5. **Output Buffering**: Server captures all terminal output in a buffer (max 1000 entries)
+6. **Bidirectional Events**:
+   - `terminal:create`: Client requests terminal session
+   - `terminal:data`: Server streams output to client
+   - `terminal:input`: Client sends user input to server
+   - `terminal:resize`: Client notifies server of terminal size changes
+   - `terminal:reconnect`: Server sends buffered data when client reconnects
+7. **Reconnection Support**: On page reload (F5):
+   - Client re-creates terminal instance and socket connection
+   - Server detects existing PTY session and attaches new socket
+   - Server sends all buffered output to restore terminal state
+   - Terminal continues from where it left off
 
 ## API Procedures (tRPC)
 
@@ -243,3 +262,9 @@ Used via tRPC for:
 
 ### Socket.IO for Terminals
 Kept Socket.IO for terminals because tRPC is request/response based, whereas terminals require streaming, bidirectional, persistent connections.
+
+**Reconnection Strategy**:
+- Socket.IO client configured with automatic reconnection (5 attempts, 1s delay)
+- Server maintains terminal sessions and output buffers across socket disconnections
+- On reconnection, buffered terminal output is sent to restore client state
+- Enables seamless terminal experience across page reloads (F5)

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
-import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder } from 'lucide-react';
+import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
@@ -79,6 +79,18 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         }
     };
 
+    const handleCopyWorktreePath = async () => {
+        if (worktree?.path) {
+            try {
+                await navigator.clipboard.writeText(worktree.path);
+                // Optionally, add a visual feedback like a toast notification
+                console.log('Worktree path copied to clipboard:', worktree.path);
+            } catch (err) {
+                console.error('Failed to copy worktree path:', err);
+            }
+        }
+    };
+
     return (
         <div className={containerClasses}>
             <header className="px-6 py-4 border-b border-slate-600 flex items-center gap-4 bg-slate-800">
@@ -126,6 +138,13 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                             >
                                 <Folder size={16} />
                                 {t('taskDetail.openInFinder')}
+                            </button>
+                            <button
+                                onClick={handleCopyWorktreePath}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
+                            >
+                                <ClipboardCopy size={16} />
+                                {t('taskDetail.copyPath')}
                             </button>
                         </div>
                         <p className="whitespace-pre-wrap leading-relaxed text-slate-50">{task.description || 'No description provided.'}</p>

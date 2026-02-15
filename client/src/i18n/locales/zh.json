@@ -51,6 +51,7 @@
     },
     "description": "描述",
     "openInFinder": "在访达中打开",
+    "copyPath": "复制路径",
     "status": "状态",
     "statusValues": {
       "todo": "待办",

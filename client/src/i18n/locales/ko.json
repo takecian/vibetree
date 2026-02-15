@@ -51,6 +51,7 @@
     },
     "description": "설명",
     "openInFinder": "Finder에서 열기",
+    "copyPath": "경로 복사",
     "status": "상태",
     "statusValues": {
       "todo": "할 일",

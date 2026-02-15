@@ -37,7 +37,36 @@ function buildAiPrompt(task: Task): string {
     return parts.join('\n');
 }
 
+function ensureSpawnHelperExecutable() {
+    if (os.platform() !== 'darwin') return;
+
+    try {
+        // node-pty's unixTerminal.js resolves helperPath relative to __dirname (which is in node_modules/node-pty/lib)
+        // We look for where node-pty is installed by using require.resolve
+        const nodePtyDir = path.dirname(require.resolve('node-pty/package.json'));
+
+        const possiblePaths = [
+            path.join(nodePtyDir, 'prebuilds', `darwin-${os.arch()}`, 'spawn-helper'),
+            path.join(nodePtyDir, 'build', 'Release', 'spawn-helper'),
+        ];
+
+        for (const helperPath of possiblePaths) {
+            if (fs.existsSync(helperPath)) {
+                const stats = fs.statSync(helperPath);
+                // Check if it's already executable (0o111)
+                if ((stats.mode & 0o111) === 0) {
+                    console.log(`[Terminal] Setting execute permission on node-pty helper: ${helperPath}`);
+                    fs.chmodSync(helperPath, 0o755);
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Terminal] Failed to ensure node-pty helper is executable:', err);
+    }
+}
+
 function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTaskByIdFunction) {
+    ensureSpawnHelperExecutable();
     const sessions: { [key: string]: TerminalSession } = {};
 
     function spawnPty(workingDir: string, termId: string, taskEnv: NodeJS.ProcessEnv = {}): pty.IPty {
@@ -56,7 +85,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
             if (session.buffer.length > BUFFER_MAX_SIZE) {
                 session.buffer.shift();  // Remove oldest entry
             }
-            
+
             // Send to connected socket
             if (session.socket) session.socket.emit(`terminal:data:${termId}`, data);
         });
@@ -81,7 +110,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
             session.socket = null;
         });
         if (cols && rows) session.pty.resize(cols, rows);
-        
+
         // Send buffered data to reconnecting client
         if (session.buffer.length > 0) {
             console.log(`[Terminal] Sending ${session.buffer.length} buffered entries to reconnecting client for ${termId}`);

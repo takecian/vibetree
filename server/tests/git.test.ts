@@ -10,28 +10,43 @@ const execAsync = util.promisify(exec);
 
 describe('git', () => {
   let testRepoPath: string;
+  let remoteRepoPath: string;
 
   beforeEach(async () => {
-    // Create a temporary directory for testing
-    testRepoPath = path.join(os.tmpdir(), `vibetree-git-test-${Date.now()}`);
+    // Create temporary directories for testing
+    const tempDir = path.join(os.tmpdir(), `vibetree-git-test-${Date.now()}`);
+    testRepoPath = path.join(tempDir, 'repo');
+    remoteRepoPath = path.join(tempDir, 'remote.git');
+
     fs.mkdirSync(testRepoPath, { recursive: true });
+    fs.mkdirSync(remoteRepoPath, { recursive: true });
+
+    // Initialize a bare git repository to act as a remote
+    await execAsync('git init --bare', { cwd: remoteRepoPath });
 
     // Initialize a git repository
     await execAsync('git init', { cwd: testRepoPath });
     await execAsync('git config user.email "test@example.com"', { cwd: testRepoPath });
     await execAsync('git config user.name "Test User"', { cwd: testRepoPath });
 
+    // Add the remote
+    await execAsync(`git remote add origin "${remoteRepoPath}"`, { cwd: testRepoPath });
+
     // Create an initial commit
     const testFile = path.join(testRepoPath, 'test.txt');
     fs.writeFileSync(testFile, 'initial content');
     await execAsync('git add .', { cwd: testRepoPath });
     await execAsync('git commit -m "Initial commit"', { cwd: testRepoPath });
+
+    // Push to the remote to establish a default branch
+    await execAsync('git push -u origin HEAD', { cwd: testRepoPath });
   });
 
   afterEach(() => {
-    // Clean up test directory
-    if (fs.existsSync(testRepoPath)) {
-      fs.rmSync(testRepoPath, { recursive: true, force: true });
+    // Clean up test directories
+    const tempDir = path.dirname(testRepoPath);
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 

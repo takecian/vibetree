@@ -19,15 +19,18 @@ export function TerminalView({ taskId, repoPath }: TerminalViewProps) {
 
         const openTerminal = () => {
             if (terminalRef.current) {
-                // Clear existing content to prevent layering
                 while (terminalRef.current.firstChild) {
                     terminalRef.current.removeChild(terminalRef.current.firstChild);
                 }
 
-                terminal.open(terminalRef.current);
+                if (terminal.element) {
+                    terminalRef.current.appendChild(terminal.element);
+                } else {
+                    terminal.open(terminalRef.current);
+                }
+
                 terminal.focus();
 
-                // Use a slightly longer delay or requestAnimationFrame to ensure DOM is ready
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         try {
@@ -39,7 +42,7 @@ export function TerminalView({ taskId, repoPath }: TerminalViewProps) {
                         } catch (e) {
                             console.error("Fit error ignored:", e);
                         }
-                    }, 50);
+                    }, 100);
                 });
             }
         };
@@ -47,7 +50,6 @@ export function TerminalView({ taskId, repoPath }: TerminalViewProps) {
         let resizeObserver: ResizeObserver | undefined;
 
         if (terminalRef.current) {
-            // Initial mount
             openTerminal();
 
             resizeObserver = new ResizeObserver(() => {
@@ -68,9 +70,6 @@ export function TerminalView({ taskId, repoPath }: TerminalViewProps) {
         return () => {
             if (resizeObserver) resizeObserver.disconnect();
 
-            // Detach terminal element from DOM to prevent it from sticking around
-            // when switching tasks or Tabs, which might cause layout issues.
-            // Note: We don't dispose() the terminal as it is managed by TerminalContext
             const element = terminal.element;
             if (element && element.parentNode) {
                 element.parentNode.removeChild(element);

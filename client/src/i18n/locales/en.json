@@ -51,6 +51,7 @@
     },
     "description": "Description",
     "openInFinder": "Open in Finder",
+    "copyPath": "Copy Path",
     "status": "Status",
     "statusValues": {
       "todo": "To Do",

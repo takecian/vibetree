@@ -51,6 +51,7 @@
     },
     "description": "説明",
     "openInFinder": "ファインダーで開く",
+    "copyPath": "パスをコピー",
     "status": "ステータス",
     "statusValues": {
       "todo": "未着手",

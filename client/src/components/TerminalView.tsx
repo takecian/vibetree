@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTerminals } from '../context/TerminalContext';
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 interface TerminalViewProps {
     taskId: string;

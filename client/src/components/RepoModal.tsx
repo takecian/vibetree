@@ -54,6 +54,19 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAi
         setAiTool(e.target.value);
     };
 
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose?.(); // Call onClose if it exists
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
+
     const getToolOptionClasses = (isSelected: boolean, isAvailable: boolean) => {
         const baseClasses = 'flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all relative gap-2';
         if (!isAvailable) {
@@ -66,8 +79,14 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAi
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/70 flex justify-center items-center z-[1000] backdrop-blur-sm">
-            <div className="bg-slate-800 p-8 rounded-xl w-full max-w-[500px] border border-slate-600 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
+        <div
+            className="fixed top-0 left-0 right-0 bottom-0 bg-black/70 flex justify-center items-center z-[1000] backdrop-blur-sm"
+            onClick={onClose ? onClose : undefined}
+        >
+            <div
+                className="bg-slate-800 p-8 rounded-xl w-full max-w-[500px] border border-slate-600 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <h2 className="mt-0 text-slate-50">{t('repoModal.title')}</h2>
                 <p className="text-slate-400 mb-6">{t('repoModal.subtitle')}</p>
                 <form onSubmit={handleSubmit}>

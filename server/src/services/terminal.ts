@@ -9,10 +9,12 @@ type GetTaskByIdFunction = (taskId: string, repoPath: string) => Promise<Task | 
 
 const SHELL_INITIALIZATION_DELAY_MS = 800;
 const shell = os.platform() === 'win32' ? 'powershell.exe' : 'zsh';
+const BUFFER_MAX_SIZE = 1000;  // Maximum number of buffer entries to keep
 
 interface TerminalSession {
     pty: pty.IPty;
     socket: Socket | null;
+    buffer: string[];  // Store recent output for reconnection
 }
 
 function escapeForShellDoubleQuoted(s: string): string {
@@ -46,9 +48,16 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
             cwd: workingDir,
             env: { ...process.env, ...taskEnv } as { [key: string]: string }
         });
-        const session: TerminalSession = { pty: ptyProcess, socket: null };
+        const session: TerminalSession = { pty: ptyProcess, socket: null, buffer: [] };
         sessions[termId] = session;
         ptyProcess.onData((data) => {
+            // Store in buffer for reconnection
+            session.buffer.push(data);
+            if (session.buffer.length > BUFFER_MAX_SIZE) {
+                session.buffer.shift();  // Remove oldest entry
+            }
+            
+            // Send to connected socket
             if (session.socket) session.socket.emit(`terminal:data:${termId}`, data);
         });
         return ptyProcess;
@@ -72,6 +81,12 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
             session.socket = null;
         });
         if (cols && rows) session.pty.resize(cols, rows);
+        
+        // Send buffered data to reconnecting client
+        if (session.buffer.length > 0) {
+            console.log(`[Terminal] Sending ${session.buffer.length} buffered entries to reconnecting client for ${termId}`);
+            socket.emit(`terminal:reconnect:${termId}`, session.buffer.join(''));
+        }
     }
 
     /** Create terminal for a task when task is created (worktree must already exist). */

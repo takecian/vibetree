@@ -23,11 +23,21 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
 
     const getTerminalSession = useCallback((taskId: string, repoPath: string): TerminalSession => {
         if (sessionsRef.current.has(taskId)) {
-            return sessionsRef.current.get(taskId)!;
+            const existingSession = sessionsRef.current.get(taskId)!;
+            // If socket is disconnected, reconnect it
+            if (!existingSession.socket.connected) {
+                console.log('[Terminal] Reconnecting socket for task:', taskId);
+                existingSession.socket.connect();
+            }
+            return existingSession;
         }
 
         // Initialize Socket
-        const socket: Socket = io(SOCKET_URL);
+        const socket: Socket = io(SOCKET_URL, {
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+        });
 
         // Initialize xterm
         const terminal: Terminal = new Terminal({
@@ -41,6 +51,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
         terminal.loadAddon(fitAddon);
 
         socket.on('connect', () => {
+            console.log('[Terminal] Socket connected for task:', taskId);
             socket.emit('terminal:create', { cols: 80, rows: 24, taskId, repoPath });
         });
 
@@ -48,9 +59,19 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
             terminal.write(data);
         });
 
+        // Handle reconnection with buffered data
+        socket.on(`terminal:reconnect:${taskId || 'default'}`, (bufferedData: string) => {
+            console.log('[Terminal] Reconnected - receiving buffered data');
+            terminal.write(bufferedData);
+        });
+
         socket.on('terminal:error', (message: string) => {
             console.error('Terminal error from server:', message);
             terminal.write(`\r\nError: ${message}\r\n`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('[Terminal] Socket disconnected for task:', taskId);
         });
 
         terminal.onData((data: string) => {

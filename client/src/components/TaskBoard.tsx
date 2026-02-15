@@ -32,7 +32,8 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
     }, [tasks, selectedTaskId]);
 
     const handleCreateTask = async (title: string, description: string) => {
-        await addTask(repoPath, title, description);
+        const newTask = await addTask(repoPath, title, description);
+        setSelectedTaskId(newTask.id);
     };
 
     const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string) => {

@@ -260,4 +260,30 @@ async function checkPRMergeStatus(repoPath: string, prUrl: string): Promise<bool
     }
 }
 
-export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus };
+async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: string): Promise<boolean> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        return false;
+    }
+
+    try {
+        // Check for uncommitted changes (git diff)
+        const uncommittedDiff = await runGit('git diff', worktreePath, repoPath);
+        if (uncommittedDiff.trim()) {
+            return true;
+        }
+
+        // Check for commits ahead of base branch
+        const commitsAhead = await runGit(`git rev-list ${baseBranch}..HEAD --count`, worktreePath, repoPath);
+        if (parseInt(commitsAhead.trim(), 10) > 0) {
+            return true;
+        }
+
+        return false;
+    } catch (e: any) {
+        console.error(`Failed to check for changes: ${e.message}`);
+        return false;
+    }
+}
+
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus, hasChangesForPR };

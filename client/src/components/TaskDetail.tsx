@@ -22,6 +22,9 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const { deleteTask } = useTasks();
     const { destroyTerminalSession } = useTerminals();
 
+    // Constants
+    const PR_CHECK_STALE_TIME_MS = 60000; // 1 minute
+
     // Resolve ID from props
     const effectiveId = taskId;
     const { data: tasks = [] } = trpc.getTasks.useQuery({ repoPath });
@@ -40,6 +43,14 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const { data: worktree } = trpc.getWorktreePath.useQuery(
         { repoPath, taskId: effectiveId },
         { enabled: !!effectiveId }
+    );
+    const { data: prCheckData } = trpc.hasChangesForPR.useQuery(
+        { repoPath, taskId: effectiveId },
+        { 
+            enabled: !task?.prUrl && !!effectiveId,
+            refetchOnWindowFocus: false,
+            staleTime: PR_CHECK_STALE_TIME_MS
+        }
     );
     const openDirectory = trpc.openDirectory.useMutation();
     const createPRMutation = trpc.createPR.useMutation();
@@ -130,6 +141,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
             setRebaseModalOpen(false);
             // Refresh diff after rebase
             utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
+            utils.hasChangesForPR.invalidate({ repoPath, taskId: effectiveId });
         } catch (e) {
             console.error('Rebase failed', e);
         }
@@ -155,6 +167,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
             // Refresh diff and status after push
             utils.getGitStatus.invalidate({ repoPath, taskId: effectiveId });
             utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
+            utils.hasChangesForPR.invalidate({ repoPath, taskId: effectiveId });
             utils.getTasks.invalidate({ repoPath });
         } catch (e) {
             console.error('Push failed', e);
@@ -219,7 +232,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                 </button>
                             )}
                         </>
-                    ) : (
+                    ) : prCheckData?.hasChanges ? (
                         <button
                             onClick={handleCreatePR}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
@@ -228,7 +241,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                             <GitPullRequest size={14} className={createPRMutation.isPending ? 'animate-pulse' : ''} />
                             {t('taskDetail.createPR')}
                         </button>
-                    )}
+                    ) : null}
                 </div>
                 <div className="flex gap-3 relative">
                     <button className={getTabButtonClasses(activeTab === 'details')} onClick={() => setActiveTab('details')}>

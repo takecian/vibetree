@@ -216,11 +216,24 @@ async function pullMainBranch(repoPath: string): Promise<{ success: boolean; mes
         // Get the default branch name
         const defaultBranch = await getDefaultBranch(repoPath);
         
+        // Get current branch to determine the pull strategy
+        let currentBranch = '';
+        try {
+            currentBranch = await runGit('git rev-parse --abbrev-ref HEAD', repoPath, repoPath);
+        } catch (e) {
+            // If we can't determine current branch, continue anyway
+        }
+        
         // Fetch latest changes from origin
         await runGit('git fetch origin', repoPath, repoPath);
         
-        // Pull the default branch
-        await runGit(`git pull origin ${defaultBranch}:${defaultBranch}`, repoPath, repoPath);
+        // If we're on the default branch, do a normal pull
+        // Otherwise, just update the local branch ref
+        if (currentBranch === defaultBranch) {
+            await runGit(`git pull origin ${defaultBranch}`, repoPath, repoPath);
+        } else {
+            await runGit(`git fetch origin ${defaultBranch}:${defaultBranch}`, repoPath, repoPath);
+        }
         
         return { 
             success: true, 

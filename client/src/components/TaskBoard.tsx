@@ -53,7 +53,8 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
             alert(t('taskList.pullSuccess'));
         } catch (error) {
             console.error('Pull failed:', error);
-            alert(t('taskList.pullError'));
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`${t('taskList.pullError')}: ${errorMessage}`);
         } finally {
             setIsPulling(false);
         }

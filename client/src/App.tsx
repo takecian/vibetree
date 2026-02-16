@@ -10,7 +10,7 @@ import { LanguageSelector } from './components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { BrowserRouter } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
@@ -60,12 +60,12 @@ function AppContent() {
     }
   };
 
-  const handleTaskSelect = (repoPath: string, taskId: string | null) => {
+  const handleTaskSelect = useCallback((repoPath: string, taskId: string | null) => {
     setSelectedTaskIds(prev => ({
       ...prev,
       [repoPath]: taskId
     }));
-  };
+  }, []);
 
   const tabs = repoPaths.map(path => ({
     id: path,

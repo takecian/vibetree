@@ -66,6 +66,7 @@
     },
     "diffLoading": "正在加载差异...",
     "diffEmpty": "未检测到更改",
-    "diffError": "加载差异失败"
+    "diffError": "加载差异失败",
+    "merged": "已合并"
   }
 }

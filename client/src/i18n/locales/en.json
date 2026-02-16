@@ -88,6 +88,7 @@
     "diffEmpty": "No changes detected",
     "diffError": "Failed to load diff",
     "viewPR": "View Pull Request",
-    "pullRequest": "Pull Request"
+    "pullRequest": "Pull Request",
+    "merged": "Merged"
   }
 }

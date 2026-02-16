@@ -66,6 +66,7 @@
     },
     "diffLoading": "차이점 로드 중...",
     "diffEmpty": "변경 사항이 감지되지 않았습니다",
-    "diffError": "차이점을 로드하지 못했습니다"
+    "diffError": "차이점을 로드하지 못했습니다",
+    "merged": "병합됨"
   }
 }

@@ -88,6 +88,7 @@
     "diffEmpty": "変更が検出されませんでした",
     "diffError": "差分の読み込みに失敗しました",
     "viewPR": "プルリクエストを表示",
-    "pullRequest": "プルリクエスト"
+    "pullRequest": "プルリクエスト",
+    "merged": "マージ済み"
   }
 }

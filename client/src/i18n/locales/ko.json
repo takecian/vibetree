@@ -8,7 +8,9 @@
     "delete": "삭제",
     "confirm": "확인",
     "settings": "설정",
-    "noRepository": "저장소 없음"
+    "noRepository": "저장소 없음",
+    "loading": "로드 중",
+    "close": "닫기"
   },
   "header": {
     "newTask": "새 작업"
@@ -68,5 +70,12 @@
     "diffEmpty": "변경 사항이 감지되지 않았습니다",
     "diffError": "차이점을 로드하지 못했습니다",
     "merged": "병합됨"
+  },
+  "repository": {
+    "closeConfirmation": {
+      "title": "저장소 닫기",
+      "message": "\"{{name}}\"을(를) 닫으시겠습니까? 작업 공간에서 제거됩니다.",
+      "confirm": "닫기"
+    }
   }
 }

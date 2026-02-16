@@ -8,7 +8,9 @@
     "delete": "删除",
     "confirm": "确认",
     "settings": "设置",
-    "noRepository": "无存储库"
+    "noRepository": "无存储库",
+    "loading": "加载中",
+    "close": "关闭"
   },
   "header": {
     "newTask": "新建任务"
@@ -68,5 +70,12 @@
     "diffEmpty": "未检测到更改",
     "diffError": "加载差异失败",
     "merged": "已合并"
+  },
+  "repository": {
+    "closeConfirmation": {
+      "title": "关闭存储库",
+      "message": "确定要关闭\"{{name}}\"吗？这将从工作区中删除它。",
+      "confirm": "关闭"
+    }
   }
 }

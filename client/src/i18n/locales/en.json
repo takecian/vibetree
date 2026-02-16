@@ -9,7 +9,8 @@
     "confirm": "Confirm",
     "settings": "Settings",
     "noRepository": "No Repository",
-    "loading": "Loading"
+    "loading": "Loading",
+    "close": "Close"
   },
   "header": {
     "newTask": "New Task"
@@ -90,5 +91,12 @@
     "viewPR": "View Pull Request",
     "pullRequest": "Pull Request",
     "merged": "Merged"
+  },
+  "repository": {
+    "closeConfirmation": {
+      "title": "Close Repository",
+      "message": "Are you sure you want to close \"{{name}}\"? This will remove it from your workspace.",
+      "confirm": "Close"
+    }
   }
 }

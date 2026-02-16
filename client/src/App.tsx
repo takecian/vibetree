@@ -21,7 +21,17 @@ function AppContent() {
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Record<string, string | null>>({});
+  
+  // Load selected task IDs from localStorage
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Record<string, string | null>>(() => {
+    try {
+      const stored = localStorage.getItem('vibetree_selectedTaskIds');
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Failed to load selected task IDs from localStorage:', error);
+      return {};
+    }
+  });
 
   const repoPaths = repositories.map(r => normalizePath(r.path));
 
@@ -61,10 +71,19 @@ function AppContent() {
   };
 
   const handleTaskSelect = useCallback((repoPath: string, taskId: string | null) => {
-    setSelectedTaskIds(prev => ({
-      ...prev,
-      [repoPath]: taskId
-    }));
+    setSelectedTaskIds(prev => {
+      const updated = {
+        ...prev,
+        [repoPath]: taskId
+      };
+      // Persist to localStorage
+      try {
+        localStorage.setItem('vibetree_selectedTaskIds', JSON.stringify(updated));
+      } catch (error) {
+        console.error('Failed to save selected task IDs to localStorage:', error);
+      }
+      return updated;
+    });
   }, []);
 
   const tabs = repoPaths.map(path => ({

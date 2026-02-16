@@ -19,6 +19,7 @@ import {
     createTask,
     updateTask,
     deleteTask,
+    deleteRepository,
     normalizePath
 } from '../services/db';
 
@@ -82,6 +83,12 @@ export const appRouter = router({
         .mutation(async ({ input }) => {
             const { updateRepository } = await import('../services/db');
             return updateRepository(input.id, input.updates);
+        }),
+    deleteRepository: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ input }) => {
+            deleteRepository(input.id);
+            return { success: true };
         }),
 
     // Task Procedures

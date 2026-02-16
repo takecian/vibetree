@@ -11,6 +11,7 @@ interface TaskContextType {
     deleteTask: (repoPath: string, taskId: string) => Promise<void>;
     addRepository: (path: string, copyFiles?: string) => Promise<Repository>;
     updateRepository: (id: string, updates: { path?: string; copyFiles?: string }) => Promise<Repository>;
+    deleteRepository: (id: string) => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -56,6 +57,12 @@ export function TaskProvider({ children }: TaskProviderProps) {
         }
     });
 
+    const deleteRepositoryMutation = trpc.deleteRepository.useMutation({
+        onSuccess: () => {
+            utils.getRepositories.invalidate();
+        }
+    });
+
     const updateConfig = async (updates: Partial<AppConfig>) => {
         await updateConfigMutation.mutateAsync(updates);
     };
@@ -76,6 +83,10 @@ export function TaskProvider({ children }: TaskProviderProps) {
         await deleteTaskMutation.mutateAsync({ repoPath, taskId });
     };
 
+    const deleteRepository = async (id: string) => {
+        await deleteRepositoryMutation.mutateAsync({ id });
+    };
+
     const contextValue: TaskContextType = {
         config,
         repositories,
@@ -85,6 +96,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
         deleteTask,
         addRepository,
         updateRepository,
+        deleteRepository,
     };
 
     return (

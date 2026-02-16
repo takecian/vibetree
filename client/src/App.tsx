@@ -2,6 +2,7 @@ import { TaskProvider, useTasks } from './context/TaskContext';
 import { TaskBoard } from './components/TaskBoard';
 import { RepoModal } from './components/RepoModal';
 import { Tabs } from './components/Tabs';
+import { ConfirmationModal } from './components/ConfirmationModal';
 import { TerminalProvider } from './context/TerminalContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc } from './api/trpc';
@@ -16,11 +17,12 @@ const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
 function AppContent() {
   const { t } = useTranslation();
-  const { config, updateConfig, repositories, loading, addRepository } = useTasks();
+  const { config, updateConfig, repositories, loading, addRepository, deleteRepository } = useTasks();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [closeRepoConfirmation, setCloseRepoConfirmation] = useState<{ id: string; path: string; name: string } | null>(null);
   
   // Load selected task IDs from localStorage
   const [selectedTaskIds, setSelectedTaskIds] = useState<Record<string, string | null>>(() => {
@@ -60,13 +62,29 @@ function AppContent() {
   };
 
   const handleCloseTab = async (path: string) => {
-    // For now, let's just update active tab if needed. 
-    // If we want to fully delete from DB, we'd need a deleteRepository mutation.
-    // The previous behavior was removing from the list, so let's assume "hide" or "delete".
-    // I'll keep it simple: just switch tabs for now unless user wants deletion.
-    const newPaths = repoPaths.filter(p => p !== path);
-    if (activeTabId === path) {
-      setActiveTabId(newPaths[0] || null);
+    const repo = repositories.find(r => normalizePath(r.path) === path);
+    if (repo) {
+      const repoName = path.split(/[/\\]/).filter(Boolean).pop() || path;
+      setCloseRepoConfirmation({ id: repo.id, path, name: repoName });
+    }
+  };
+
+  const confirmCloseRepository = async () => {
+    if (!closeRepoConfirmation) return;
+    
+    try {
+      await deleteRepository(closeRepoConfirmation.id);
+      
+      // Update active tab if needed
+      const newPaths = repoPaths.filter(p => p !== closeRepoConfirmation.path);
+      if (activeTabId === closeRepoConfirmation.path) {
+        setActiveTabId(newPaths[0] || null);
+      }
+    } catch (error) {
+      console.error('Failed to delete repository:', error);
+      alert('Failed to close repository');
+    } finally {
+      setCloseRepoConfirmation(null);
     }
   };
 
@@ -112,6 +130,17 @@ function AppContent() {
           hideAiAssistant={isAddingRepo && !showAiToolOnlyModal && !showSettings}
           hideCopyFiles={showSettings}
         />
+      )}
+
+      {closeRepoConfirmation && (
+        <ConfirmationModal
+          onClose={() => setCloseRepoConfirmation(null)}
+          onConfirm={confirmCloseRepository}
+          title={t('repository.closeConfirmation.title')}
+          confirmText={t('repository.closeConfirmation.confirm')}
+        >
+          {t('repository.closeConfirmation.message', { name: closeRepoConfirmation.name })}
+        </ConfirmationModal>
       )}
 
       <header className="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-800 shadow-lg z-10">

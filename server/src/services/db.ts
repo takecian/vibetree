@@ -30,6 +30,7 @@ db.exec(`
         description TEXT,
         branch_name TEXT,
         pr_url TEXT,
+        pr_merged INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
     );
@@ -39,6 +40,16 @@ db.exec(`
 try {
     db.exec("ALTER TABLE tasks ADD COLUMN pr_url TEXT");
     console.log("[DB] Added pr_url column to tasks table");
+} catch (e: any) {
+    // If it fails, it likely already exists
+    if (!e.message.includes('duplicate column name')) {
+        console.error("[DB] Migration failed:", e.message);
+    }
+}
+
+try {
+    db.exec("ALTER TABLE tasks ADD COLUMN pr_merged INTEGER DEFAULT 0");
+    console.log("[DB] Added pr_merged column to tasks table");
 } catch (e: any) {
     // If it fails, it likely already exists
     if (!e.message.includes('duplicate column name')) {
@@ -139,6 +150,7 @@ export function getTasks(repositoryId: string | null): Task[] {
         description: row.description || '',
         branchName: row.branch_name || '',
         prUrl: row.pr_url || '',
+        prMerged: row.pr_merged === 1,
         createdAt: row.created_at
     }));
 }
@@ -153,6 +165,7 @@ export function getTaskById(id: string): Task | undefined {
         description: row.description || '',
         branchName: row.branch_name || '',
         prUrl: row.pr_url || '',
+        prMerged: row.pr_merged === 1,
         createdAt: row.created_at
     };
 }
@@ -199,6 +212,10 @@ export function updateTask(id: string, updates: Partial<Task>): Task {
     if (updates.prUrl !== undefined) {
         fields.push('pr_url = ?');
         values.push(updates.prUrl);
+    }
+    if (updates.prMerged !== undefined) {
+        fields.push('pr_merged = ?');
+        values.push(updates.prMerged ? 1 : 0);
     }
 
     if (fields.length > 0) {

@@ -61,6 +61,7 @@
       "diff": "差分"
     },
     "delete": "削除",
+    "deleteMergedTask": "削除",
     "deleteConfirmation": {
       "title": "タスクを削除",
       "message": "タスク「{{title}}」を削除してもよろしいですか？これによりgitワークツリーも削除され、元に戻すことはできません。",

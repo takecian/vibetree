@@ -12,10 +12,7 @@ You can launch Vibetree directly using `npx` without installation:
 npx vibetree
 ```
 
-> **Note**: Until the next version is published to npm, you can use the latest development version directly from GitHub:
-> ```bash
-> npx github:takecian/vibetree
-> ```
+![Vibetree Dashboard](docs/images/vibetree_screenshot.png)
 
 The app will start and automatically open in your default browser at `http://localhost:5179`.
 

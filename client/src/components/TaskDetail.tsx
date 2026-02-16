@@ -177,7 +177,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 )}
                 <div className="flex-1 flex items-center gap-3">
                     <h1 className="m-0 text-lg font-semibold">{task.title}</h1>
-                    {task.prUrl && (
+                    {task.prUrl ? (
                         <a
                             href={task.prUrl}
                             target="_blank"
@@ -188,6 +188,15 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                             <GitPullRequest size={12} />
                             PR
                         </a>
+                    ) : (
+                        <button
+                            onClick={handleCreatePR}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                            disabled={createPRMutation.isPending}
+                        >
+                            <GitPullRequest size={14} className={createPRMutation.isPending ? 'animate-pulse' : ''} />
+                            {t('taskDetail.createPR')}
+                        </button>
                     )}
                 </div>
                 <div className="flex gap-3 relative">
@@ -209,13 +218,9 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                 <button onClick={handleRebase} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
                                     <RefreshCw size={16} className={rebaseMutation.isPending ? 'animate-spin' : ''} /> {t('taskDetail.rebase')}
                                 </button>
-                                {task.prUrl ? (
+                                {task.prUrl && (
                                     <button onClick={handlePush} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
                                         <GitPullRequest size={16} className={pushMutation.isPending ? 'text-blue-400 animate-pulse' : ''} /> {t('taskDetail.push')}
-                                    </button>
-                                ) : (
-                                    <button onClick={handleCreatePR} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
-                                        <GitPullRequest size={16} className={createPRMutation.isPending ? 'text-blue-400' : ''} /> {t('taskDetail.createPR')}
                                     </button>
                                 )}
                                 <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-red-400 cursor-pointer text-left text-sm hover:bg-slate-600">

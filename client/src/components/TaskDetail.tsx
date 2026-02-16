@@ -43,7 +43,11 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     );
     const { data: prCheckData } = trpc.hasChangesForPR.useQuery(
         { repoPath, taskId: effectiveId },
-        { enabled: !task?.prUrl && !!effectiveId }
+        { 
+            enabled: !task?.prUrl && !!effectiveId,
+            refetchOnWindowFocus: false,
+            staleTime: 60000 // 1 minute
+        }
     );
     const openDirectory = trpc.openDirectory.useMutation();
     const createPRMutation = trpc.createPR.useMutation();

@@ -110,7 +110,7 @@ async function rebase(repoPath: string, taskId: string, baseBranch: string): Pro
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
-    await runGit(`git rebase ${baseBranch}`, worktreePath, repoPath);
+    await runGit(`git rebase ${JSON.stringify(baseBranch)}`, worktreePath, repoPath);
     return { success: true };
 }
 
@@ -180,7 +180,7 @@ async function getBranchDiff(repoPath: string, taskId: string, baseBranch: strin
         throw new Error("Worktree does not exist");
     }
     // Get diff between base branch and current HEAD
-    return await runGit(`git diff ${baseBranch}...HEAD`, worktreePath, repoPath);
+    return await runGit(`git diff ${JSON.stringify(baseBranch)}...HEAD`, worktreePath, repoPath);
 }
 
 async function updatePR(repoPath: string, taskId: string, prData: { title?: string; body?: string }): Promise<{ success: boolean; message?: string }> {
@@ -274,7 +274,7 @@ async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: str
         }
 
         // Check for commits ahead of base branch
-        const commitsAhead = await runGit(`git rev-list ${baseBranch}..HEAD --count`, worktreePath, repoPath);
+        const commitsAhead = await runGit(`git rev-list ${JSON.stringify(baseBranch)}..HEAD --count`, worktreePath, repoPath);
         if (parseInt(commitsAhead.trim(), 10) > 0) {
             return true;
         }

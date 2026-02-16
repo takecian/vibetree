@@ -15,7 +15,12 @@
   },
   "taskList": {
     "title": "所有任务",
-    "empty": "未找到任务。创建一个任务以开始。"
+    "empty": "未找到任务。创建一个任务以开始。",
+    "addTask": "添加任务",
+    "pullMainBranch": "拉取主分支",
+    "pulling": "拉取中...",
+    "pullSuccess": "成功拉取更改",
+    "pullError": "拉取更改失败"
   },
   "createTask": {
     "title": "创建新任务",

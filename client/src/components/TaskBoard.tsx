@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useTasks } from '../context/TaskContext';
 import { CreateTaskModal } from './CreateTaskModal';
 import { TaskDetail } from './TaskDetail';
-import { Plus, Github, Settings } from 'lucide-react';
+import { Plus, Github, Settings, RefreshCw } from 'lucide-react';
 import { Task } from '../types';
 import { trpc } from '../api/trpc';
 import { RepoModal } from './RepoModal';
@@ -18,9 +18,12 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [isPulling, setIsPulling] = useState<boolean>(false);
 
     // Fetch tasks for this specific repo
     const { data: tasks = [], isLoading: tasksLoading } = trpc.getTasks.useQuery({ repoPath });
+
+    const pullMainBranchMutation = trpc.pullMainBranch.useMutation();
 
     const currentRepo = repositories.find(r => r.path === repoPath);
 
@@ -40,6 +43,19 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
         if (currentRepo) {
             await updateRepository(currentRepo.id, { path, copyFiles });
             setIsRepoSettingsOpen(false);
+        }
+    };
+
+    const handlePullMainBranch = async () => {
+        setIsPulling(true);
+        try {
+            await pullMainBranchMutation.mutateAsync({ repoPath });
+            alert(t('taskList.pullSuccess'));
+        } catch (error) {
+            console.error('Pull failed:', error);
+            alert(t('taskList.pullError'));
+        } finally {
+            setIsPulling(false);
         }
     };
 
@@ -67,6 +83,14 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
                     <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t('taskList.title')} ({tasks.length})</span>
                         <div className="flex gap-2">
+                            <button
+                                onClick={handlePullMainBranch}
+                                disabled={isPulling}
+                                className="bg-green-600/20 text-green-400 border border-green-500/30 p-1.5 rounded-md hover:bg-green-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={t('taskList.pullMainBranch')}
+                            >
+                                <RefreshCw size={14} className={isPulling ? 'animate-spin' : ''} />
+                            </button>
                             <button
                                 onClick={() => setIsRepoSettingsOpen(true)}
                                 className="bg-slate-700/40 text-slate-400 border border-slate-600/50 p-1.5 rounded-md hover:bg-slate-700 hover:text-slate-200 transition-colors"

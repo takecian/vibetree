@@ -209,4 +209,27 @@ async function getDefaultBranch(repoPath: string): Promise<string> {
     }
 }
 
-export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch };
+async function pullMainBranch(repoPath: string): Promise<{ success: boolean; message: string }> {
+    if (!repoPath) throw new Error("Repository not selected");
+    
+    try {
+        // Get the default branch name
+        const defaultBranch = await getDefaultBranch(repoPath);
+        
+        // Fetch latest changes from origin
+        await runGit('git fetch origin', repoPath, repoPath);
+        
+        // Pull the default branch
+        await runGit(`git pull origin ${defaultBranch}:${defaultBranch}`, repoPath, repoPath);
+        
+        return { 
+            success: true, 
+            message: `Successfully pulled ${defaultBranch} branch` 
+        };
+    } catch (e: any) {
+        console.error("Pull failed:", e);
+        throw new Error(`Failed to pull: ${e.message}`);
+    }
+}
+
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch };

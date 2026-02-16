@@ -222,14 +222,19 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                 PR
                             </a>
                             {task.prMerged && (
-                                <button
-                                    onClick={handleDelete}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
-                                    title={t('taskDetail.deleteMergedTask')}
-                                >
-                                    <Trash2 size={14} />
-                                    {t('taskDetail.deleteMergedTask')}
-                                </button>
+                                <>
+                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 text-purple-400 rounded-md text-xs font-medium">
+                                        {t('taskDetail.merged')}
+                                    </span>
+                                    <button
+                                        onClick={handleDelete}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+                                        title={t('taskDetail.deleteMergedTask')}
+                                    >
+                                        <Trash2 size={14} />
+                                        {t('taskDetail.deleteMergedTask')}
+                                    </button>
+                                </>
                             )}
                         </>
                     ) : prCheckData?.hasChanges ? (

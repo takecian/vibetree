@@ -64,6 +64,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 }
             );
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [task?.prUrl, task?.prMerged, effectiveId, repoPath]);
 
 

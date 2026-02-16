@@ -11,6 +11,20 @@ interface GitState {
     repoPath: string;
 }
 
+// Helper to validate and sanitize branch names for git commands
+function sanitizeBranchName(branchName: string): string {
+    // Git branch names can contain alphanumeric characters, slashes, hyphens, underscores, and dots
+    // but should not contain spaces, special shell characters, or start with a dot or slash
+    const sanitized = branchName.replace(/[^a-zA-Z0-9/_.-]/g, '');
+    if (sanitized !== branchName) {
+        throw new Error(`Invalid branch name: ${branchName}`);
+    }
+    if (sanitized.startsWith('.') || sanitized.startsWith('/')) {
+        throw new Error(`Branch name cannot start with . or /: ${branchName}`);
+    }
+    return sanitized;
+}
+
 // Helper to run git commands
 async function runGit(command: string, cwd: string, repoPath: string): Promise<string> {
     const workingDir = cwd || repoPath;
@@ -110,7 +124,8 @@ async function rebase(repoPath: string, taskId: string, baseBranch: string): Pro
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
-    await runGit(`git rebase ${JSON.stringify(baseBranch)}`, worktreePath, repoPath);
+    const sanitizedBranch = sanitizeBranchName(baseBranch);
+    await runGit(`git rebase ${sanitizedBranch}`, worktreePath, repoPath);
     return { success: true };
 }
 
@@ -179,8 +194,9 @@ async function getBranchDiff(repoPath: string, taskId: string, baseBranch: strin
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
+    const sanitizedBranch = sanitizeBranchName(baseBranch);
     // Get diff between base branch and current HEAD
-    return await runGit(`git diff ${JSON.stringify(baseBranch)}...HEAD`, worktreePath, repoPath);
+    return await runGit(`git diff ${sanitizedBranch}...HEAD`, worktreePath, repoPath);
 }
 
 async function updatePR(repoPath: string, taskId: string, prData: { title?: string; body?: string }): Promise<{ success: boolean; message?: string }> {
@@ -273,8 +289,9 @@ async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: str
             return true;
         }
 
+        const sanitizedBranch = sanitizeBranchName(baseBranch);
         // Check for commits ahead of base branch
-        const commitsAhead = await runGit(`git rev-list ${JSON.stringify(baseBranch)}..HEAD --count`, worktreePath, repoPath);
+        const commitsAhead = await runGit(`git rev-list ${sanitizedBranch}..HEAD --count`, worktreePath, repoPath);
         if (parseInt(commitsAhead.trim(), 10) > 0) {
             return true;
         }

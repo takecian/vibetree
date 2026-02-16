@@ -249,4 +249,15 @@ async function pullMainBranch(repoPath: string): Promise<{ success: boolean; mes
     }
 }
 
-export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch };
+async function checkPRMergeStatus(repoPath: string, prUrl: string): Promise<boolean> {
+    try {
+        // Use gh CLI to check if the PR is merged
+        const output = await runGit(`gh pr view ${JSON.stringify(prUrl)} --json state --jq .state`, repoPath, repoPath);
+        return output.trim().toLowerCase() === 'merged';
+    } catch (e: any) {
+        console.error(`Failed to check PR merge status: ${e.message}`);
+        return false;
+    }
+}
+
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus };

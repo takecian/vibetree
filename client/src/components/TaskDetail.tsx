@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
@@ -46,7 +46,25 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const pushMutation = trpc.push.useMutation();
     const syncPRWithAI = trpc.syncPRWithAI.useMutation();
     const rebaseMutation = trpc.rebase.useMutation();
+    const checkPRMergeStatusMutation = trpc.checkPRMergeStatus.useMutation();
     const utils = trpc.useUtils();
+
+    // Check PR merge status when component loads and task has a PR
+    useEffect(() => {
+        if (task?.prUrl && !task.prMerged) {
+            checkPRMergeStatusMutation.mutate(
+                { repoPath, taskId: effectiveId },
+                {
+                    onSuccess: (data) => {
+                        if (data.merged) {
+                            // Invalidate tasks to refresh the UI with updated merge status
+                            utils.getTasks.invalidate();
+                        }
+                    },
+                }
+            );
+        }
+    }, [task?.prUrl, task?.prMerged, effectiveId, repoPath]);
 
 
     if (!task) return null; // Don't show loading in sidebar, just null if not found
@@ -178,16 +196,28 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 <div className="flex-1 flex items-center gap-3">
                     <h1 className="m-0 text-lg font-semibold">{task.title}</h1>
                     {task.prUrl ? (
-                        <a
-                            href={task.prUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md text-xs font-medium hover:bg-blue-500/20 transition-colors no-underline"
-                            title={t('taskDetail.viewPR')}
-                        >
-                            <GitPullRequest size={12} />
-                            PR
-                        </a>
+                        <>
+                            <a
+                                href={task.prUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md text-xs font-medium hover:bg-blue-500/20 transition-colors no-underline"
+                                title={t('taskDetail.viewPR')}
+                            >
+                                <GitPullRequest size={12} />
+                                PR
+                            </a>
+                            {task.prMerged && (
+                                <button
+                                    onClick={handleDelete}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+                                    title={t('taskDetail.deleteMergedTask')}
+                                >
+                                    <Trash2 size={14} />
+                                    {t('taskDetail.deleteMergedTask')}
+                                </button>
+                            )}
+                        </>
                     ) : (
                         <button
                             onClick={handleCreatePR}

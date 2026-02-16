@@ -12,6 +12,7 @@ export interface Task {
     createdAt: string;
     branchName: string;
     prUrl?: string;
+    prMerged?: boolean;
 }
 
 export interface AppConfig {

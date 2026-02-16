@@ -61,6 +61,7 @@
       "diff": "Diff"
     },
     "delete": "Delete",
+    "deleteMergedTask": "Delete",
     "deleteConfirmation": {
       "title": "Delete Task",
       "message": "Are you sure you want to delete the task \"{{title}}\"? This will also delete the git worktree and cannot be undone.",

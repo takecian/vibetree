@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
 import { v4 as uuidv4 } from 'uuid';
 import { Task } from '../types';
-import { createWorktree, runGit, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch } from '../services/git';
+import { createWorktree, runGit, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus } from '../services/git';
 import { generatePRSummary } from '../services/ai';
 import { exec } from 'child_process';
 import util from 'util';
@@ -272,6 +272,27 @@ export const appRouter = router({
         .input(z.object({ repoPath: z.string() }))
         .mutation(async ({ input }) => {
             return pullMainBranch(input.repoPath);
+        }),
+
+    checkPRMergeStatus: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            const task = getTaskById(input.taskId);
+            if (!task || !task.prUrl) {
+                return { merged: false };
+            }
+
+            const merged = await checkPRMergeStatus(input.repoPath, task.prUrl);
+            
+            // Update the task's prMerged field in the database
+            if (merged !== task.prMerged) {
+                updateTask(input.taskId, { prMerged: merged });
+            }
+
+            return { merged };
         }),
 
     // System Procedures

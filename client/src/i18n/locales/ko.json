@@ -49,6 +49,7 @@
       "diff": "차이점"
     },
     "delete": "삭제",
+    "deleteMergedTask": "삭제",
     "deleteConfirmation": {
       "title": "작업 삭제",
       "message": "\"{{title}}\" 작업을 삭제하시겠습니까? 이렇게 하면 git 작업 트리도 삭제되며 되돌릴 수 없습니다.",

@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import util from 'util';
-import { runGit, createWorktree, getDefaultBranch, rebase } from '../src/services/git';
+import { runGit, createWorktree, getDefaultBranch, rebase, hasChangesForPR } from '../src/services/git';
 
 const execAsync = util.promisify(exec);
 
@@ -218,6 +218,59 @@ describe('git', () => {
 
       const { stdout } = await execAsync('git log --oneline', { cwd: worktreePath });
       expect(stdout).toContain('Main change');
+    });
+  });
+
+  describe('hasChangesForPR', () => {
+    it('should return false when there are no changes', async () => {
+      const taskId = 'test-no-changes';
+      const branchName = 'feature/no-changes';
+
+      await createWorktree(testRepoPath, taskId, branchName);
+      const mainBranch = await getDefaultBranch(testRepoPath);
+
+      const hasChanges = await hasChangesForPR(testRepoPath, taskId, mainBranch);
+      expect(hasChanges).toBe(false);
+    });
+
+    it('should return true when there are uncommitted changes', async () => {
+      const taskId = 'test-uncommitted';
+      const branchName = 'feature/uncommitted';
+
+      await createWorktree(testRepoPath, taskId, branchName);
+      const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
+
+      // Create a new file
+      fs.writeFileSync(path.join(worktreePath, 'new-file.txt'), 'new content');
+
+      const mainBranch = await getDefaultBranch(testRepoPath);
+      const hasChanges = await hasChangesForPR(testRepoPath, taskId, mainBranch);
+      expect(hasChanges).toBe(true);
+    });
+
+    it('should return true when there are committed changes ahead of base branch', async () => {
+      const taskId = 'test-committed';
+      const branchName = 'feature/committed';
+
+      await createWorktree(testRepoPath, taskId, branchName);
+      const worktreePath = path.join(testRepoPath, '.vibetree', 'worktrees', taskId);
+
+      // Create and commit a file
+      fs.writeFileSync(path.join(worktreePath, 'committed-file.txt'), 'committed content');
+      await execAsync('git add .', { cwd: worktreePath });
+      await execAsync('git commit -m "Add committed file"', { cwd: worktreePath });
+
+      const mainBranch = await getDefaultBranch(testRepoPath);
+      const hasChanges = await hasChangesForPR(testRepoPath, taskId, mainBranch);
+      expect(hasChanges).toBe(true);
+    });
+
+    it('should return false when worktree does not exist', async () => {
+      const taskId = 'non-existent-task';
+      const mainBranch = await getDefaultBranch(testRepoPath);
+
+      const hasChanges = await hasChangesForPR(testRepoPath, taskId, mainBranch);
+      expect(hasChanges).toBe(false);
     });
   });
 });

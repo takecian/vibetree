@@ -267,9 +267,9 @@ async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: str
     }
 
     try {
-        // Check for uncommitted changes (git diff)
-        const uncommittedDiff = await runGit('git diff', worktreePath, repoPath);
-        if (uncommittedDiff.trim()) {
+        // Check for uncommitted changes (both staged and unstaged)
+        const status = await runGit('git status --porcelain', worktreePath, repoPath);
+        if (status.trim()) {
             return true;
         }
 

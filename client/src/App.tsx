@@ -10,7 +10,7 @@ import { LanguageSelector } from './components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { BrowserRouter } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
@@ -21,6 +21,7 @@ function AppContent() {
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Record<string, string | null>>({});
 
   const repoPaths = repositories.map(r => normalizePath(r.path));
 
@@ -58,6 +59,13 @@ function AppContent() {
       setActiveTabId(newPaths[0] || null);
     }
   };
+
+  const handleTaskSelect = useCallback((repoPath: string, taskId: string | null) => {
+    setSelectedTaskIds(prev => ({
+      ...prev,
+      [repoPath]: taskId
+    }));
+  }, []);
 
   const tabs = repoPaths.map(path => ({
     id: path,
@@ -114,7 +122,11 @@ function AppContent() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTabId ? (
-          <TaskBoard repoPath={activeTabId} />
+          <TaskBoard 
+            repoPath={activeTabId} 
+            selectedTaskId={selectedTaskIds[activeTabId] || null}
+            onTaskSelect={(taskId) => handleTaskSelect(activeTabId, taskId)}
+          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             <h2 className="text-xl font-light mb-4">No Repository Open</h2>

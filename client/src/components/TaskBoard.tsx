@@ -10,14 +10,15 @@ import { RepoModal } from './RepoModal';
 
 interface TaskBoardProps {
     repoPath: string;
+    selectedTaskId: string | null;
+    onTaskSelect: (taskId: string | null) => void;
 }
 
-export function TaskBoard({ repoPath }: TaskBoardProps) {
+export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardProps) {
     const { t } = useTranslation();
     const { addTask, repositories, updateRepository } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
-    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isPulling, setIsPulling] = useState<boolean>(false);
 
     // Fetch tasks for this specific repo
@@ -30,13 +31,13 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
     // Default to the first task if none selected
     useEffect(() => {
         if (!selectedTaskId && tasks.length > 0) {
-            setSelectedTaskId(tasks[0].id);
+            onTaskSelect(tasks[0].id);
         }
-    }, [tasks, selectedTaskId]);
+    }, [tasks, selectedTaskId, onTaskSelect]);
 
     const handleCreateTask = async (title: string, description: string) => {
         const newTask = await addTask(repoPath, title, description);
-        setSelectedTaskId(newTask.id);
+        onTaskSelect(newTask.id);
     };
 
     const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string) => {
@@ -123,7 +124,7 @@ export function TaskBoard({ repoPath }: TaskBoardProps) {
                                         ? 'bg-blue-500/10 border-blue-500/30'
                                         : 'bg-transparent border-transparent hover:bg-slate-700/30 hover:border-slate-600/30'
                                         }`}
-                                    onClick={() => setSelectedTaskId(task.id)}
+                                    onClick={() => onTaskSelect(task.id)}
                                 >
                                     <div className="flex flex-col gap-2">
                                         <div className="flex justify-between items-start gap-2">

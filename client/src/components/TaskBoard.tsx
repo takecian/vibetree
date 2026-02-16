@@ -19,7 +19,6 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
     const { addTask, repositories, updateRepository } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
-    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [isPulling, setIsPulling] = useState<boolean>(false);
 
     // Fetch tasks for this specific repo

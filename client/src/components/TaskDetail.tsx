@@ -22,6 +22,9 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const { deleteTask } = useTasks();
     const { destroyTerminalSession } = useTerminals();
 
+    // Constants
+    const PR_CHECK_STALE_TIME_MS = 60000; // 1 minute
+
     // Resolve ID from props
     const effectiveId = taskId;
     const { data: tasks = [] } = trpc.getTasks.useQuery({ repoPath });
@@ -46,7 +49,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         { 
             enabled: !task?.prUrl && !!effectiveId,
             refetchOnWindowFocus: false,
-            staleTime: 60000 // 1 minute
+            staleTime: PR_CHECK_STALE_TIME_MS
         }
     );
     const openDirectory = trpc.openDirectory.useMutation();

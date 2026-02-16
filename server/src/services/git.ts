@@ -19,6 +19,10 @@ function sanitizeBranchName(branchName: string): string {
     if (sanitized !== branchName) {
         throw new Error(`Invalid branch name: ${branchName}`);
     }
+    // Reject branch names with consecutive dots (path traversal risk)
+    if (sanitized.includes('..')) {
+        throw new Error(`Branch name cannot contain consecutive dots: ${branchName}`);
+    }
     if (sanitized.startsWith('.') || sanitized.startsWith('/')) {
         throw new Error(`Branch name cannot start with . or /: ${branchName}`);
     }
@@ -298,7 +302,7 @@ async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: str
 
         return false;
     } catch (e: any) {
-        console.error(`Failed to check for changes: ${e.message}`);
+        console.error(`Failed to check for changes in task ${taskId} at ${repoPath}: ${e.message}`);
         return false;
     }
 }

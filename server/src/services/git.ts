@@ -209,4 +209,44 @@ async function getDefaultBranch(repoPath: string): Promise<string> {
     }
 }
 
-export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch };
+async function pullMainBranch(repoPath: string): Promise<{ success: boolean; message: string }> {
+    if (!repoPath) throw new Error("Repository not selected");
+    
+    try {
+        // Get the default branch name
+        const defaultBranch = await getDefaultBranch(repoPath);
+        
+        // Fetch latest changes from origin
+        await runGit('git fetch origin', repoPath, repoPath);
+        
+        // Get current branch to determine the pull strategy
+        let currentBranch = '';
+        try {
+            currentBranch = await runGit('git rev-parse --abbrev-ref HEAD', repoPath, repoPath);
+        } catch (e) {
+            // If we can't determine current branch (e.g., detached HEAD),
+            // use the safer fetch strategy
+            console.warn('[Git] Could not determine current branch, using fetch strategy');
+        }
+        
+        // If we're on the default branch, do a normal pull
+        // Otherwise, just update the local branch ref
+        if (currentBranch && currentBranch === defaultBranch) {
+            await runGit(`git pull origin ${defaultBranch}`, repoPath, repoPath);
+        } else {
+            // Update the local branch reference to match the remote
+            // This is safe even if the local branch doesn't exist yet
+            await runGit(`git fetch origin ${defaultBranch}:${defaultBranch}`, repoPath, repoPath);
+        }
+        
+        return { 
+            success: true, 
+            message: `Successfully pulled ${defaultBranch} branch` 
+        };
+    } catch (e: any) {
+        console.error("Pull failed:", e);
+        throw new Error(`Failed to pull: ${e.message}`);
+    }
+}
+
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch };

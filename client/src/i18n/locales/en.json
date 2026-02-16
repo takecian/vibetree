@@ -16,7 +16,12 @@
   },
   "taskList": {
     "title": "All Tasks",
-    "empty": "No tasks found. Create one to get started."
+    "empty": "No tasks found. Create one to get started.",
+    "addTask": "Add Task",
+    "pullMainBranch": "Pull Main Branch",
+    "pulling": "Pulling...",
+    "pullSuccess": "Successfully pulled changes",
+    "pullError": "Failed to pull changes"
   },
   "createTask": {
     "title": "Create New Task",

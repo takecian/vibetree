@@ -385,8 +385,8 @@ export const appRouter = router({
             '/usr/local/bin',
             '/usr/bin',
             '/bin',
-            (process.env.HOME || '') + '/.local/bin',
-            (process.env.HOME || '') + '/bin',
+            path.join(process.env.HOME || '', '.local', 'bin'),
+            path.join(process.env.HOME || '', 'bin'),
         ];
         const envPath = process.env.PATH || '';
         const extendedPath = commonPaths.join(path.delimiter) + path.delimiter + envPath;
@@ -415,25 +415,40 @@ export const appRouter = router({
     openVSCode: publicProcedure
         .input(z.object({ path: z.string() }))
         .mutation(async ({ input }) => {
-            // Open VS Code with the specified directory
-            // Use array format to avoid shell injection issues
-            let command: string;
-            let args: string[];
+            // Validate the path
+            const resolvedPath = path.resolve(input.path);
             
-            if (os.platform() === 'win32') {
-                // On Windows, we need to use cmd /c to execute the code command
-                command = 'cmd';
-                args = ['/c', 'code', input.path];
-            } else {
-                command = 'code';
-                args = [input.path];
+            // Check if path exists
+            if (!fs.existsSync(resolvedPath)) {
+                throw new Error('Path does not exist');
             }
             
+            // Check if path is absolute (after resolution it should be)
+            if (!path.isAbsolute(resolvedPath)) {
+                throw new Error('Path must be absolute');
+            }
+            
+            // Open VS Code with the specified directory using spawn for security
             try {
                 const { spawn } = await import('child_process');
+                let command: string;
+                let args: string[];
+                
+                // Determine the correct command based on platform
+                if (os.platform() === 'win32') {
+                    // On Windows, try code.cmd first, then code.exe
+                    // VS Code installer adds code.cmd to PATH on Windows
+                    command = 'code.cmd';
+                    args = [resolvedPath];
+                } else {
+                    command = 'code';
+                    args = [resolvedPath];
+                }
+                
                 const child = spawn(command, args, { 
                     detached: true,
-                    stdio: 'ignore'
+                    stdio: 'ignore',
+                    shell: false // Explicitly disable shell for security
                 });
                 child.unref(); // Allow parent to exit independently
                 return { success: true };

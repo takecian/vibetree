@@ -378,6 +378,48 @@ export const appRouter = router({
         }
         return results;
     }),
+    checkVSCode: publicProcedure.query(async () => {
+        // Check if VS Code is installed by looking for 'code' command
+        const commonPaths = [
+            '/opt/homebrew/bin',
+            '/usr/local/bin',
+            '/usr/bin',
+            '/bin',
+            (process.env.HOME || '') + '/.local/bin',
+            (process.env.HOME || '') + '/bin',
+        ];
+        const envPath = process.env.PATH || '';
+        const extendedPath = commonPaths.join(path.delimiter) + path.delimiter + envPath;
+
+        let found = false;
+        try {
+            const cmd = os.platform() === 'win32' ? 'where code' : 'which code';
+            const { stdout } = await execAsync(cmd, { env: { ...process.env, PATH: extendedPath } });
+            if (stdout.trim()) found = true;
+        } catch { }
+
+        if (!found) {
+            for (const p of commonPaths) {
+                const binaryPath = path.join(p, 'code' + (os.platform() === 'win32' ? '.exe' : ''));
+                if (fs.existsSync(binaryPath)) { found = true; break; }
+            }
+        }
+
+        return { installed: found };
+    }),
+    openVSCode: publicProcedure
+        .input(z.object({ path: z.string() }))
+        .mutation(async ({ input }) => {
+            // Open VS Code with the specified directory
+            const command = `code "${input.path}"`;
+            try {
+                await execAsync(command);
+                return { success: true };
+            } catch (error: any) {
+                console.error('Failed to open VS Code:', error);
+                throw new Error(`Failed to open VS Code: ${error.message}`);
+            }
+        }),
 });
 
 export type AppRouter = typeof appRouter;

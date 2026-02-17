@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
 import { DiffView } from './DiffView';
-import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy, GitPullRequest, RefreshCw } from 'lucide-react';
+import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy, GitPullRequest, RefreshCw, Code } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { CreatePRModal } from './CreatePRModal';
 import { useTerminals } from '../context/TerminalContext';
@@ -45,6 +45,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         { repoPath, taskId: effectiveId },
         { enabled: !!effectiveId }
     );
+    const { data: vsCodeCheck } = trpc.checkVSCode.useQuery();
     const { data: prCheckData } = trpc.hasChangesForPR.useQuery(
         { repoPath, taskId: effectiveId },
         { 
@@ -54,6 +55,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         }
     );
     const openDirectory = trpc.openDirectory.useMutation();
+    const openVSCode = trpc.openVSCode.useMutation();
     const createPRMutation = trpc.createPR.useMutation();
     const pushMutation = trpc.push.useMutation();
     const syncPRWithAI = trpc.syncPRWithAI.useMutation();
@@ -120,6 +122,12 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const handleOpenWorktree = () => {
         if (worktree?.path) {
             openDirectory.mutate({ path: worktree.path });
+        }
+    };
+
+    const handleOpenVSCode = () => {
+        if (worktree?.path) {
+            openVSCode.mutate({ path: worktree.path });
         }
     };
 
@@ -304,20 +312,31 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                     <div className="bg-slate-800 p-6 rounded-xl border border-slate-600 max-w-[800px] mx-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="mt-0 text-base text-slate-400 uppercase tracking-wider">{t('taskDetail.description')}</h3>
-                            <button
-                                onClick={handleOpenWorktree}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
-                            >
-                                <Folder size={16} />
-                                {t('taskDetail.openInFinder')}
-                            </button>
-                            <button
-                                onClick={handleCopyWorktreePath}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
-                            >
-                                <ClipboardCopy size={16} />
-                                {t('taskDetail.copyPath')}
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleOpenWorktree}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
+                                >
+                                    <Folder size={16} />
+                                    {t('taskDetail.openInFinder')}
+                                </button>
+                                {vsCodeCheck?.installed && (
+                                    <button
+                                        onClick={handleOpenVSCode}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
+                                    >
+                                        <Code size={16} />
+                                        {t('taskDetail.openInVSCode')}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleCopyWorktreePath}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 text-slate-50 rounded-md text-sm hover:bg-slate-600 transition-colors"
+                                >
+                                    <ClipboardCopy size={16} />
+                                    {t('taskDetail.copyPath')}
+                                </button>
+                            </div>
                         </div>
                         <p className="whitespace-pre-wrap leading-relaxed text-slate-50 mb-6">{task.description || 'No description provided.'}</p>
 

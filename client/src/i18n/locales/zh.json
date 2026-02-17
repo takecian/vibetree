@@ -75,11 +75,19 @@
     "rebase": "变基",
     "createPR": "创建PR",
     "push": "推送",
+    "pushError": "推送更改失败",
+    "forcePushError": "强制推送失败",
     "rebaseConfirmation": {
       "title": "变基任务",
       "message": "确定要将此任务变基到默认分支吗？",
       "confirm": "变基"
     }
+  },
+  "forcePush": {
+    "title": "推送被拒绝",
+    "message": "推送被拒绝，因为远程分支有您本地没有的提交。这通常发生在其他人推送到同一分支时。",
+    "warning": "⚠️ 强制推送将用您的本地更改覆盖远程分支。此操作无法撤消，可能导致其他开发人员丢失工作成果。",
+    "confirm": "强制推送"
   },
   "repository": {
     "closeConfirmation": {

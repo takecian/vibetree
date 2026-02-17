@@ -7,6 +7,7 @@ import { DiffView } from './DiffView';
 import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy, GitPullRequest, RefreshCw } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { CreatePRModal } from './CreatePRModal';
+import { ForcePushModal } from './ForcePushModal';
 import { useTerminals } from '../context/TerminalContext';
 import { Task } from '../types';
 import { trpc } from '../api/trpc';
@@ -35,6 +36,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
     const [isCreatePRModalOpen, setCreatePRModalOpen] = useState<boolean>(false);
     const [isRebaseModalOpen, setRebaseModalOpen] = useState<boolean>(false);
+    const [isForcePushModalOpen, setForcePushModalOpen] = useState<boolean>(false);
 
     // tRPC Queries
     const { data: diffData, isLoading: loadingDiff } = trpc.getGitDiff.useQuery(
@@ -56,6 +58,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const openDirectory = trpc.openDirectory.useMutation();
     const createPRMutation = trpc.createPR.useMutation();
     const pushMutation = trpc.push.useMutation();
+    const forcePushMutation = trpc.forcePush.useMutation();
     const syncPRWithAI = trpc.syncPRWithAI.useMutation();
     const rebaseMutation = trpc.rebase.useMutation();
     const checkPRMergeStatusMutation = trpc.checkPRMergeStatus.useMutation();
@@ -175,8 +178,43 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
             utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
             utils.hasChangesForPR.invalidate({ repoPath, taskId: effectiveId });
             utils.getTasks.invalidate({ repoPath });
-        } catch (e) {
+        } catch (e: any) {
             console.error('Push failed', e);
+            // Check if push was rejected due to remote changes
+            if (e?.message?.includes('PUSH_REJECTED_REMOTE_CHANGES')) {
+                setForcePushModalOpen(true);
+            } else {
+                alert(t('taskDetail.pushError'));
+            }
+        }
+    };
+
+    const handleConfirmForcePush = async () => {
+        try {
+            await forcePushMutation.mutateAsync({
+                repoPath,
+                taskId: effectiveId,
+                commitMessage: task.title
+            });
+
+            // Automatically sync PR summary using AI
+            try {
+                await syncPRWithAI.mutateAsync({ repoPath, taskId: effectiveId });
+            } catch (aiErr) {
+                console.warn('AI PR Sync failed', aiErr);
+            }
+
+            // Refresh diff and status after push
+            utils.getGitStatus.invalidate({ repoPath, taskId: effectiveId });
+            utils.getGitDiff.invalidate({ repoPath, taskId: effectiveId });
+            utils.hasChangesForPR.invalidate({ repoPath, taskId: effectiveId });
+            utils.getTasks.invalidate({ repoPath });
+            
+            setForcePushModalOpen(false);
+        } catch (e: any) {
+            console.error('Force push failed', e);
+            alert(t('taskDetail.forcePushError'));
+            setForcePushModalOpen(false);
         }
     };
 
@@ -381,6 +419,14 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                     isCreating={createPRMutation.isPending}
                     onClose={() => setCreatePRModalOpen(false)}
                     onCreate={handleConfirmCreatePR}
+                />
+            )}
+
+            {isForcePushModalOpen && (
+                <ForcePushModal
+                    onClose={() => setForcePushModalOpen(false)}
+                    onConfirm={handleConfirmForcePush}
+                    isLoading={forcePushMutation.isPending}
                 />
             )}
         </div>

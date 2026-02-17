@@ -71,6 +71,8 @@
     "rebase": "Rebase",
     "createPR": "Create PR",
     "push": "Push",
+    "pushError": "Failed to push changes",
+    "forcePushError": "Failed to force push changes",
     "rebaseConfirmation": {
       "title": "Rebase Task",
       "message": "Are you sure you want to rebase this task onto the default branch?",
@@ -91,6 +93,12 @@
     "viewPR": "View Pull Request",
     "pullRequest": "Pull Request",
     "merged": "Merged"
+  },
+  "forcePush": {
+    "title": "Push Rejected",
+    "message": "The push was rejected because the remote branch has commits that you don't have locally. This usually happens when someone else has pushed to the same branch.",
+    "warning": "⚠️ Force pushing will overwrite the remote branch with your local changes. This cannot be undone and may cause other developers to lose their work.",
+    "confirm": "Force Push"
   },
   "repository": {
     "closeConfirmation": {

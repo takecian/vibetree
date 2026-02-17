@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
 import { v4 as uuidv4 } from 'uuid';
 import { Task } from '../types';
-import { createWorktree, runGit, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus, hasChangesForPR } from '../services/git';
+import { createWorktree, runGit, rebase, createPR, pushBranch, pushBranchForce, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus, hasChangesForPR } from '../services/git';
 import { generatePRSummary } from '../services/ai';
 import { exec } from 'child_process';
 import util from 'util';
@@ -249,6 +249,16 @@ export const appRouter = router({
         }))
         .mutation(async ({ input }) => {
             return pushBranch(input.repoPath, input.taskId, input.commitMessage);
+        }),
+
+    forcePush: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+            commitMessage: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            return pushBranchForce(input.repoPath, input.taskId, input.commitMessage);
         }),
 
     syncPRWithAI: publicProcedure

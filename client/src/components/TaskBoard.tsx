@@ -16,7 +16,7 @@ interface TaskBoardProps {
 
 export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardProps) {
     const { t } = useTranslation();
-    const { addTask, repositories, updateRepository } = useTasks();
+    const { addTask, repositories, updateRepository, createTaskMutation } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
     const [isPulling, setIsPulling] = useState<boolean>(false);
@@ -38,6 +38,7 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
     const handleCreateTask = async (title: string, description: string) => {
         const newTask = await addTask(repoPath, title, description);
         onTaskSelect(newTask.id);
+        setIsCreateModalOpen(false);
     };
 
     const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string) => {
@@ -67,6 +68,7 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
                 <CreateTaskModal
                     onClose={() => setIsCreateModalOpen(false)}
                     onCreate={handleCreateTask}
+                    isCreating={createTaskMutation.isPending}
                 />
             )}
 

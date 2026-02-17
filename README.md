@@ -1,5 +1,7 @@
 # Vibetree
 
+[![npm version](https://img.shields.io/npm/v/vibetree.svg)](https://www.npmjs.com/package/vibetree)
+
 Vibetree is a local AI-enhanced task manager designed for seamless development workflows and Git integration. It combines a modern React frontend with a robust Node.js backend, providing an isolated environment for each task using Git worktrees.
 
 **🔒 Privacy First**: Vibetree runs 100% locally on your machine. No data is sent to external servers - your code, tasks, and AI interactions stay private and secure.

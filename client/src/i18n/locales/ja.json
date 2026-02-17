@@ -90,11 +90,7 @@
     "diffError": "差分の読み込みに失敗しました",
     "viewPR": "プルリクエストを表示",
     "pullRequest": "プルリクエスト",
-    "merged": "マージ済み",
-    "checkPRStatus": "PRステータスを確認",
-    "prMergedStatus": "プルリクエストはマージされました！",
-    "prNotMergedStatus": "プルリクエストはまだマージされていません",
-    "prCheckFailed": "PRステータスの確認に失敗しました"
+    "merged": "マージ済み"
   },
   "repository": {
     "closeConfirmation": {

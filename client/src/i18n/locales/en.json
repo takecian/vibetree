@@ -90,11 +90,7 @@
     "diffError": "Failed to load diff",
     "viewPR": "View Pull Request",
     "pullRequest": "Pull Request",
-    "merged": "Merged",
-    "checkPRStatus": "Check PR Status",
-    "prMergedStatus": "Pull request has been merged!",
-    "prNotMergedStatus": "Pull request is not yet merged",
-    "prCheckFailed": "Failed to check PR status"
+    "merged": "Merged"
   },
   "repository": {
     "closeConfirmation": {

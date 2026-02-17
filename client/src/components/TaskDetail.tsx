@@ -84,27 +84,6 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [task?.prUrl, task?.prMerged, effectiveId, repoPath]);
 
-    // Manual PR merge status check function
-    const handleCheckPRStatus = async () => {
-        if (!task?.prUrl) return;
-        
-        try {
-            const result = await checkPRMergeStatusMutation.mutateAsync(
-                { repoPath, taskId: effectiveId }
-            );
-            if (result.merged) {
-                // Invalidate tasks to refresh the UI with updated merge status
-                utils.getTasks.invalidate();
-                alert(t('taskDetail.prMergedStatus'));
-            } else {
-                alert(t('taskDetail.prNotMergedStatus'));
-            }
-        } catch (error) {
-            console.error('Failed to check PR status:', error);
-            alert(t('taskDetail.prCheckFailed'));
-        }
-    };
-
 
     if (!task) return null; // Don't show loading in sidebar, just null if not found
 
@@ -307,16 +286,9 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                     <RefreshCw size={16} className={rebaseMutation.isPending ? 'animate-spin' : ''} /> {t('taskDetail.rebase')}
                                 </button>
                                 {task.prUrl && (
-                                    <>
-                                        <button onClick={handlePush} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
-                                            <GitPullRequest size={16} className={pushMutation.isPending ? 'text-blue-400 animate-pulse' : ''} /> {t('taskDetail.push')}
-                                        </button>
-                                        {!task.prMerged && (
-                                            <button onClick={handleCheckPRStatus} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
-                                                <RefreshCw size={16} className={checkPRMergeStatusMutation.isPending ? 'animate-spin' : ''} /> {t('taskDetail.checkPRStatus')}
-                                            </button>
-                                        )}
-                                    </>
+                                    <button onClick={handlePush} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
+                                        <GitPullRequest size={16} className={pushMutation.isPending ? 'text-blue-400 animate-pulse' : ''} /> {t('taskDetail.push')}
+                                    </button>
                                 )}
                                 <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-red-400 cursor-pointer text-left text-sm hover:bg-slate-600">
                                     <Trash2 size={16} /> {t('taskDetail.delete')}

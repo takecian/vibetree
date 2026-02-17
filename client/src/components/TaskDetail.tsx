@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 import { TerminalView } from './TerminalView';
+import { DiffView } from './DiffView';
 import { X, FileText, Terminal, MoreVertical, Trash2, GitBranch, Folder, ClipboardCopy, GitPullRequest, RefreshCw } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { CreatePRModal } from './CreatePRModal';
@@ -328,11 +329,7 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                     {loadingDiff ? (
                         <div className="flex justify-center items-center h-40 text-slate-500">{t('taskDetail.diffLoading')}</div>
                     ) : (
-                        <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs overflow-x-auto">
-                            <pre className="text-slate-300 whitespace-pre font-mono">
-                                {diffData?.diff || t('taskDetail.diffEmpty')}
-                            </pre>
-                        </div>
+                        <DiffView diffText={diffData?.diff || ''} />
                     )}
                 </div>
             </main>

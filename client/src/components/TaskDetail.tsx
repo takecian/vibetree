@@ -180,8 +180,8 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
             utils.getTasks.invalidate({ repoPath });
         } catch (e: any) {
             console.error('Push failed', e);
-            // Check if push was rejected due to remote changes
-            if (e?.message?.includes('PUSH_REJECTED_REMOTE_CHANGES')) {
+            // Check if push was rejected due to remote changes using error code
+            if (e?.code === 'PUSH_REJECTED_REMOTE_CHANGES') {
                 setForcePushModalOpen(true);
             } else {
                 alert(t('taskDetail.pushError'));

@@ -12,6 +12,7 @@ interface TaskContextType {
     addRepository: (path: string, copyFiles?: string) => Promise<Repository>;
     updateRepository: (id: string, updates: { path?: string; copyFiles?: string }) => Promise<Repository>;
     deleteRepository: (id: string) => Promise<void>;
+    createTaskMutation: ReturnType<typeof trpc.createTask.useMutation>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -97,6 +98,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
         addRepository,
         updateRepository,
         deleteRepository,
+        createTaskMutation,
     };
 
     return (

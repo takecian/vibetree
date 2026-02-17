@@ -69,7 +69,17 @@
     "diffLoading": "正在加载差异...",
     "diffEmpty": "未检测到更改",
     "diffError": "加载差异失败",
-    "merged": "已合并"
+    "viewPR": "查看拉取请求",
+    "pullRequest": "拉取请求",
+    "merged": "已合并",
+    "rebase": "变基",
+    "createPR": "创建PR",
+    "push": "推送",
+    "rebaseConfirmation": {
+      "title": "变基任务",
+      "message": "确定要将此任务变基到默认分支吗？",
+      "confirm": "变基"
+    }
   },
   "repository": {
     "closeConfirmation": {

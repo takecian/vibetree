@@ -61,20 +61,25 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const checkPRMergeStatusMutation = trpc.checkPRMergeStatus.useMutation();
     const utils = trpc.useUtils();
 
-    // Check PR merge status when component loads and task has a PR
+    // Automatically check PR merge status in the background (non-blocking)
     useEffect(() => {
         if (task?.prUrl && !task.prMerged) {
-            checkPRMergeStatusMutation.mutate(
-                { repoPath, taskId: effectiveId },
-                {
-                    onSuccess: (data) => {
-                        if (data.merged) {
-                            // Invalidate tasks to refresh the UI with updated merge status
-                            utils.getTasks.invalidate();
-                        }
-                    },
-                }
-            );
+            // Use setTimeout to ensure this doesn't block the initial render
+            const timer = setTimeout(() => {
+                checkPRMergeStatusMutation.mutate(
+                    { repoPath, taskId: effectiveId },
+                    {
+                        onSuccess: (data) => {
+                            if (data.merged) {
+                                // Invalidate tasks to refresh the UI with updated merge status
+                                utils.getTasks.invalidate();
+                            }
+                        },
+                    }
+                );
+            }, 500); // Small delay to let UI render first
+
+            return () => clearTimeout(timer);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [task?.prUrl, task?.prMerged, effectiveId, repoPath]);
@@ -193,8 +198,20 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                 window.open(result.url, '_blank');
             }
             // Refresh tasks to get the new prUrl
-            utils.getTasks.invalidate({ repoPath });
+            await utils.getTasks.invalidate({ repoPath });
             setCreatePRModalOpen(false);
+            
+            // Automatically check PR merge status after creating PR (non-blocking)
+            checkPRMergeStatusMutation.mutate(
+                { repoPath, taskId: effectiveId },
+                {
+                    onSuccess: (data) => {
+                        if (data.merged) {
+                            utils.getTasks.invalidate();
+                        }
+                    },
+                }
+            );
         } catch (e) {
             console.error('Failed to create PR', e);
         }

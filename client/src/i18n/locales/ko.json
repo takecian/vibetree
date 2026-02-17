@@ -69,7 +69,17 @@
     "diffLoading": "차이점 로드 중...",
     "diffEmpty": "변경 사항이 감지되지 않았습니다",
     "diffError": "차이점을 로드하지 못했습니다",
-    "merged": "병합됨"
+    "viewPR": "풀 리퀘스트 보기",
+    "pullRequest": "풀 리퀘스트",
+    "merged": "병합됨",
+    "rebase": "리베이스",
+    "createPR": "PR 생성",
+    "push": "푸시",
+    "rebaseConfirmation": {
+      "title": "작업 리베이스",
+      "message": "이 작업을 기본 브랜치로 리베이스하시겠습니까?",
+      "confirm": "리베이스"
+    }
   },
   "repository": {
     "closeConfirmation": {

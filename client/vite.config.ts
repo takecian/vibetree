@@ -28,5 +28,27 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Terminal emulator in its own chunk
+            'xterm': ['@xterm/xterm', '@xterm/addon-fit'],
+            // Diff viewer libraries in their own chunk
+            'diff-view': ['react-diff-view', 'diff'],
+            // Router in its own chunk
+            'router': ['react-router-dom'],
+            // Socket.io in its own chunk
+            'socket': ['socket.io-client'],
+            // React Query and tRPC in their own chunk
+            'query': ['@tanstack/react-query', '@trpc/client', '@trpc/react-query'],
+            // i18n in its own chunk
+            'i18n': ['i18next', 'react-i18next'],
+            // UI libraries
+            'ui-icons': ['lucide-react'],
+          },
+        },
+      },
+    },
   }
 })

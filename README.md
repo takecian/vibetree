@@ -77,7 +77,7 @@ The app will start and automatically open in your default browser at `http://loc
     npm run dev
     ```
 
-2.  Open your browser and navigate to `http://localhost:5179` (or the port specified in the log).
+2.  Open your browser and navigate to `http://localhost:5179` (or the port specified by the `VIBETREE_PORT` environment variable).
 
 3.  **Setup**:
     - Click the **Settings** (gear icon) in the top right.

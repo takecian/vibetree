@@ -174,6 +174,14 @@ async function createPR(repoPath: string, taskId: string, prData: { title: strin
     }
 }
 
+async function stageAndCommit(worktreePath: string, repoPath: string, commitMessage: string): Promise<void> {
+    await runGit('git add .', worktreePath, repoPath);
+    const status = await runGit('git status --porcelain', worktreePath, repoPath);
+    if (status) {
+        await runGit(`git commit -m ${JSON.stringify(commitMessage)}`, worktreePath, repoPath);
+    }
+}
+
 async function pushBranch(repoPath: string, taskId: string, commitMessage: string): Promise<{ success: boolean; message?: string }> {
     const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
     if (!fs.existsSync(worktreePath)) {
@@ -181,15 +189,36 @@ async function pushBranch(repoPath: string, taskId: string, commitMessage: strin
     }
 
     try {
-        await runGit('git add .', worktreePath, repoPath);
-        const status = await runGit('git status --porcelain', worktreePath, repoPath);
-        if (status) {
-            await runGit(`git commit -m ${JSON.stringify(commitMessage)}`, worktreePath, repoPath);
-        }
+        await stageAndCommit(worktreePath, repoPath, commitMessage);
         await runGit('git push origin HEAD', worktreePath, repoPath);
         return { success: true };
     } catch (e: any) {
+        // Check if push was rejected due to remote changes
+        // Note: Git does not provide structured error codes for push rejections.
+        // We check for common error message patterns that indicate the remote has
+        // diverged. These patterns are consistent across git versions and locales.
+        const errorMessage = e.message || '';
+        if (errorMessage.includes('rejected') || errorMessage.includes('non-fast-forward') || errorMessage.includes('fetch first')) {
+            const error: any = new Error('Push was rejected because the remote contains work that you do not have locally');
+            error.code = 'PUSH_REJECTED_REMOTE_CHANGES';
+            throw error;
+        }
         throw new Error(`Failed to push: ${e.message}`);
+    }
+}
+
+async function pushBranchForce(repoPath: string, taskId: string, commitMessage: string): Promise<{ success: boolean; message?: string }> {
+    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    if (!fs.existsSync(worktreePath)) {
+        throw new Error("Worktree does not exist");
+    }
+
+    try {
+        await stageAndCommit(worktreePath, repoPath, commitMessage);
+        await runGit('git push --force origin HEAD', worktreePath, repoPath);
+        return { success: true };
+    } catch (e: any) {
+        throw new Error(`Failed to force push: ${e.message}`);
     }
 }
 
@@ -307,4 +336,4 @@ async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: str
     }
 }
 
-export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus, hasChangesForPR };
+export { createWorktree, runGit, removeWorktree, rebase, createPR, pushBranch, pushBranchForce, getBranchDiff, updatePR, getDefaultBranch, pullMainBranch, checkPRMergeStatus, hasChangesForPR };

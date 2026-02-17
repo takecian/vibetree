@@ -395,7 +395,12 @@ export const appRouter = router({
         try {
             const cmd = os.platform() === 'win32' ? 'where code' : 'which code';
             const { stdout } = await execAsync(cmd, { env: { ...process.env, PATH: extendedPath } });
-            if (stdout.trim()) found = true;
+            const output = stdout.trim();
+            // On Windows, 'where' may return multiple paths; check if at least one exists
+            if (output) {
+                const firstPath = output.split('\n')[0].trim();
+                if (firstPath) found = true;
+            }
         } catch { }
 
         if (!found) {
@@ -411,9 +416,26 @@ export const appRouter = router({
         .input(z.object({ path: z.string() }))
         .mutation(async ({ input }) => {
             // Open VS Code with the specified directory
-            const command = `code "${input.path}"`;
+            // Use array format to avoid shell injection issues
+            let command: string;
+            let args: string[];
+            
+            if (os.platform() === 'win32') {
+                // On Windows, we need to use cmd /c to execute the code command
+                command = 'cmd';
+                args = ['/c', 'code', input.path];
+            } else {
+                command = 'code';
+                args = [input.path];
+            }
+            
             try {
-                await execAsync(command);
+                const { spawn } = await import('child_process');
+                const child = spawn(command, args, { 
+                    detached: true,
+                    stdio: 'ignore'
+                });
+                child.unref(); // Allow parent to exit independently
                 return { success: true };
             } catch (error: any) {
                 console.error('Failed to open VS Code:', error);

@@ -80,6 +80,7 @@
     },
     "description": "説明",
     "openInFinder": "ファインダーで開く",
+    "openInVSCode": "VS Codeで開く",
     "copyPath": "パスをコピー",
     "status": "ステータス",
     "statusValues": {

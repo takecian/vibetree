@@ -80,6 +80,7 @@
     },
     "description": "Description",
     "openInFinder": "Open in Finder",
+    "openInVSCode": "Open in VS Code",
     "copyPath": "Copy Path",
     "status": "Status",
     "statusValues": {

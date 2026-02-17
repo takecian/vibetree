@@ -388,6 +388,85 @@ export const appRouter = router({
         }
         return results;
     }),
+    checkVSCode: publicProcedure.query(async () => {
+        // Check if VS Code is installed by looking for 'code' command
+        const commonPaths = [
+            '/opt/homebrew/bin',
+            '/usr/local/bin',
+            '/usr/bin',
+            '/bin',
+            path.join(process.env.HOME || '', '.local', 'bin'),
+            path.join(process.env.HOME || '', 'bin'),
+        ];
+        const envPath = process.env.PATH || '';
+        const extendedPath = commonPaths.join(path.delimiter) + path.delimiter + envPath;
+
+        let found = false;
+        try {
+            const cmd = os.platform() === 'win32' ? 'where code' : 'which code';
+            const { stdout } = await execAsync(cmd, { env: { ...process.env, PATH: extendedPath } });
+            const output = stdout.trim();
+            // On Windows, 'where' may return multiple paths; check if at least one exists
+            if (output) {
+                const firstPath = output.split('\n')[0].trim();
+                if (firstPath) found = true;
+            }
+        } catch { }
+
+        if (!found) {
+            for (const p of commonPaths) {
+                const binaryPath = path.join(p, 'code' + (os.platform() === 'win32' ? '.exe' : ''));
+                if (fs.existsSync(binaryPath)) { found = true; break; }
+            }
+        }
+
+        return { installed: found };
+    }),
+    openVSCode: publicProcedure
+        .input(z.object({ path: z.string() }))
+        .mutation(async ({ input }) => {
+            // Validate the path
+            const resolvedPath = path.resolve(input.path);
+            
+            // Check if path exists
+            if (!fs.existsSync(resolvedPath)) {
+                throw new Error('Path does not exist');
+            }
+            
+            // Check if path is absolute (after resolution it should be)
+            if (!path.isAbsolute(resolvedPath)) {
+                throw new Error('Path must be absolute');
+            }
+            
+            // Open VS Code with the specified directory using spawn for security
+            try {
+                const { spawn } = await import('child_process');
+                let command: string;
+                let args: string[];
+                
+                // Determine the correct command based on platform
+                if (os.platform() === 'win32') {
+                    // On Windows, try code.cmd first, then code.exe
+                    // VS Code installer adds code.cmd to PATH on Windows
+                    command = 'code.cmd';
+                    args = [resolvedPath];
+                } else {
+                    command = 'code';
+                    args = [resolvedPath];
+                }
+                
+                const child = spawn(command, args, { 
+                    detached: true,
+                    stdio: 'ignore',
+                    shell: false // Explicitly disable shell for security
+                });
+                child.unref(); // Allow parent to exit independently
+                return { success: true };
+            } catch (error: any) {
+                console.error('Failed to open VS Code:', error);
+                throw new Error(`Failed to open VS Code: ${error.message}`);
+            }
+        }),
 });
 
 export type AppRouter = typeof appRouter;

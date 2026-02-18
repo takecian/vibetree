@@ -53,10 +53,10 @@ function AppContent() {
     }
   }, [repoPaths, activeTabId]);
 
-  const handleAddRepo = async (path: string, aiTool: string, copyFiles: string) => {
+  const handleAddRepo = async (path: string, aiTool: string, copyFiles: string, worktreePath: string) => {
     const normalized = normalizePath(path);
-    await addRepository(normalized, copyFiles);
-    await updateConfig({ repoPath: normalized, aiTool, copyFiles });
+    await addRepository(normalized, copyFiles, worktreePath);
+    await updateConfig({ repoPath: normalized, aiTool, copyFiles, worktreePath });
     setActiveTabId(normalized);
     setIsAddingRepo(false);
   };
@@ -116,11 +116,12 @@ function AppContent() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       {(showAiToolOnlyModal || isAddingRepo || showSettings) && (
         <RepoModal
-          onSave={showSettings ? (_path, aiTool, copyFiles) => {
-            updateConfig({ aiTool, copyFiles });
+          onSave={showSettings ? (_path, aiTool, copyFiles, worktreePath) => {
+            updateConfig({ aiTool, copyFiles, worktreePath });
             setShowSettings(false);
           } : handleAddRepo}
           initialConfig={config}
+          initialRepository={showSettings && activeTabId ? repositories.find(r => normalizePath(r.path) === activeTabId) : undefined}
           onClose={() => {
             setShowAiToolOnlyModal(false);
             setIsAddingRepo(false);

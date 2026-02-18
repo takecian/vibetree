@@ -5,19 +5,22 @@ import { FolderOpen } from 'lucide-react';
 import { AppConfig } from '../types';
 
 interface RepoModalProps {
-    onSave: (path: string, aiTool: string, copyFiles: string) => void;
+    onSave: (path: string, aiTool: string, copyFiles: string, worktreePath: string) => void;
     initialConfig: AppConfig | null;
+    initialRepository?: { copyFiles?: string; worktreePath?: string };
     onClose?: () => void;
     hideRepoPath?: boolean;
     hideAiAssistant?: boolean;
     hideCopyFiles?: boolean;
+    hideWorktreePath?: boolean;
 }
 
-export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAiAssistant, hideCopyFiles }: RepoModalProps) {
+export function RepoModal({ onSave, initialConfig, initialRepository, onClose, hideRepoPath, hideAiAssistant, hideCopyFiles, hideWorktreePath }: RepoModalProps) {
     const { t } = useTranslation();
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
     const [copyFiles, setCopyFiles] = useState<string>('');
+    const [worktreePath, setWorktreePath] = useState<string>('');
 
     // tRPC Hooks
     const { data: availableTools = {}, isLoading: checkingTools } = trpc.getAiTools.useQuery();
@@ -27,11 +30,13 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAi
         if (initialConfig?.repoPath) setPath(initialConfig.repoPath);
         if (initialConfig?.aiTool) setAiTool(initialConfig.aiTool);
         if (initialConfig?.copyFiles !== undefined) setCopyFiles(initialConfig.copyFiles ?? '');
-    }, [initialConfig]);
+        if (initialRepository?.copyFiles !== undefined) setCopyFiles(initialRepository.copyFiles ?? '');
+        if (initialRepository?.worktreePath !== undefined) setWorktreePath(initialRepository.worktreePath ?? '');
+    }, [initialConfig, initialRepository]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        onSave(path.trim(), aiTool, copyFiles.trim());
+        onSave(path.trim(), aiTool, copyFiles.trim(), worktreePath.trim());
     };
 
     const handleBrowse = async () => {
@@ -154,6 +159,20 @@ export function RepoModal({ onSave, initialConfig, onClose, hideRepoPath, hideAi
                                 className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-y"
                             />
                             <p className="text-xs text-slate-400 mt-1">{t('repoModal.copyFilesHelp')}</p>
+                        </div>
+                    )}
+
+                    {!hideWorktreePath && (
+                        <div className="mb-6">
+                            <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.worktreePath')}</label>
+                            <input
+                                type="text"
+                                value={worktreePath}
+                                onChange={(e) => setWorktreePath(e.target.value)}
+                                placeholder={t('repoModal.worktreePathPlaceholder')}
+                                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">{t('repoModal.worktreePathHelp')}</p>
                         </div>
                     )}
 

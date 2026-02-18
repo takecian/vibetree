@@ -53,30 +53,39 @@ async function createWorktree(
     repoPath: string,
     taskId: string,
     branchName: string,
-    copyFiles?: string
+    copyFiles?: string,
+    worktreePath?: string
 ): Promise<{ success: boolean; path: string; message?: string }> {
     if (!repoPath) throw new Error("Repository not selected");
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    
+    // Use custom worktree path if provided, otherwise use default
+    const baseWorktreePath = worktreePath || path.join(repoPath, '.vibetree', 'worktrees');
+    const fullWorktreePath = path.join(baseWorktreePath, taskId);
 
-    if (fs.existsSync(worktreePath)) {
-        return { success: true, path: worktreePath, message: 'Worktree already exists' };
+    if (fs.existsSync(fullWorktreePath)) {
+        return { success: true, path: fullWorktreePath, message: 'Worktree already exists' };
     }
 
     try {
+        // Ensure the base worktree directory exists
+        if (!fs.existsSync(baseWorktreePath)) {
+            fs.mkdirSync(baseWorktreePath, { recursive: true });
+        }
+
         let createBranchFlag = '';
         try {
             await execAsync(`git rev-parse --verify ${branchName}`, { cwd: repoPath });
         } catch (e) {
             createBranchFlag = `-b ${branchName}`;
         }
-        await execAsync(`git worktree add ${createBranchFlag} "${worktreePath}"`, { cwd: repoPath });
+        await execAsync(`git worktree add ${createBranchFlag} "${fullWorktreePath}"`, { cwd: repoPath });
 
         // Copy configured files (e.g. .env) into worktree
         if (copyFiles && typeof copyFiles === 'string') {
             const entries = copyFiles.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
             for (const entry of entries) {
                 const srcPath = path.isAbsolute(entry) ? entry : path.join(repoPath, entry);
-                const destPath = path.join(worktreePath, path.basename(entry));
+                const destPath = path.join(fullWorktreePath, path.basename(entry));
                 if (!fs.existsSync(srcPath)) {
                     console.warn(`[Worktree] Copy skipped (not found): ${srcPath}`);
                     continue;
@@ -95,21 +104,24 @@ async function createWorktree(
             }
         }
 
-        return { success: true, path: worktreePath };
+        return { success: true, path: fullWorktreePath };
     } catch (e: any) {
         console.error("Worktree creation failed:", e);
         throw e;
     }
 }
 
-async function removeWorktree(repoPath: string, taskId: string, branchName?: string): Promise<{ success: boolean; message?: string }> {
+async function removeWorktree(repoPath: string, taskId: string, branchName?: string, worktreePath?: string): Promise<{ success: boolean; message?: string }> {
     if (!repoPath) throw new Error("Repository not selected");
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    
+    // Use custom worktree path if provided, otherwise use default
+    const baseWorktreePath = worktreePath || path.join(repoPath, '.vibetree', 'worktrees');
+    const fullWorktreePath = path.join(baseWorktreePath, taskId);
 
     try {
-        if (fs.existsSync(worktreePath)) {
-            await execAsync(`git worktree remove --force "${worktreePath}"`, { cwd: repoPath });
-            console.log(`[Git] Removed worktree at ${worktreePath}`);
+        if (fs.existsSync(fullWorktreePath)) {
+            await execAsync(`git worktree remove --force "${fullWorktreePath}"`, { cwd: repoPath });
+            console.log(`[Git] Removed worktree at ${fullWorktreePath}`);
         }
 
         if (branchName) {

@@ -41,6 +41,9 @@
     "copyFiles": "要复制到工作树的文件",
     "copyFilesPlaceholder": ".env\n.env.local",
     "copyFilesHelp": "每行一个路径（相对于存储库根目录的相对路径或绝对路径）。这些文件将被复制到每个新的工作树（例如.env）。",
+    "worktreePath": "工作树基本路径（可选）",
+    "worktreePathPlaceholder": "/Users/username/worktrees",
+    "worktreePathHelp": "工作树的自定义目录。如果未设置，工作树将在 [repo]/.vibetree/worktrees/ 中创建",
     "saveConfiguration": "保存配置",
     "folderPickerError": "无法打开文件夹选择器。请手动粘贴路径。"
   },

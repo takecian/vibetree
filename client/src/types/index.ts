@@ -4,6 +4,7 @@ export interface Repository {
     id: string;
     path: string;
     copyFiles?: string;
+    worktreePath?: string;
 }
 
 export interface Task {

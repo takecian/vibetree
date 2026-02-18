@@ -25,6 +25,13 @@ import {
 
 const execAsync = util.promisify(exec);
 
+// Helper function to get worktree path for a task
+function getWorktreePathForTask(repoPath: string, taskId: string): string {
+    const repo = getRepositoryByPath(repoPath);
+    const baseWorktreePath = repo?.worktreePath || path.join(repoPath, '.vibetree', 'worktrees');
+    return path.join(baseWorktreePath, taskId);
+}
+
 export const appRouter = router({
     // Config Procedures
     getConfig: publicProcedure.query(({ ctx }) => {
@@ -35,6 +42,7 @@ export const appRouter = router({
             repoPath: z.string().optional(),
             aiTool: z.string().optional(),
             copyFiles: z.string().optional(),
+            worktreePath: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
             const state = ctx.getState();
@@ -45,7 +53,7 @@ export const appRouter = router({
                 const normalized = normalizePath(input.repoPath || '');
                 state.repoPath = normalized;
                 if (normalized) {
-                    addRepository(normalized, input.copyFiles);
+                    addRepository(normalized, input.copyFiles, input.worktreePath);
                 }
             }
             if (input.aiTool !== undefined) state.aiTool = input.aiTool;
@@ -58,6 +66,14 @@ export const appRouter = router({
                     updateRepository(repo.id, { copyFiles: input.copyFiles });
                 }
             }
+            if (input.worktreePath !== undefined) {
+                // Update worktreePath for active repo if it exists
+                const repo = getRepositoryByPath(state.repoPath);
+                if (repo) {
+                    const { updateRepository } = await import('../services/db');
+                    updateRepository(repo.id, { worktreePath: input.worktreePath });
+                }
+            }
 
             await saveConfig(state);
             return state;
@@ -68,9 +84,9 @@ export const appRouter = router({
     }),
 
     addRepository: publicProcedure
-        .input(z.object({ path: z.string(), copyFiles: z.string().optional() }))
+        .input(z.object({ path: z.string(), copyFiles: z.string().optional(), worktreePath: z.string().optional() }))
         .mutation(async ({ input }) => {
-            return addRepository(input.path, input.copyFiles);
+            return addRepository(input.path, input.copyFiles, input.worktreePath);
         }),
     updateRepository: publicProcedure
         .input(z.object({
@@ -78,6 +94,7 @@ export const appRouter = router({
             updates: z.object({
                 path: z.string().optional(),
                 copyFiles: z.string().optional(),
+                worktreePath: z.string().optional(),
             }),
         }))
         .mutation(async ({ input }) => {
@@ -121,7 +138,7 @@ export const appRouter = router({
             if (input.repoPath && ctx.createWorktree && ctx.ensureTerminalForTask && ctx.runAiForTask) {
                 try {
                     console.log(`[tRPC] Creating worktree for task ${newTask.id} in ${input.repoPath}`);
-                    await ctx.createWorktree(input.repoPath, newTask.id, newTask.branchName || '', repo.copyFiles || '');
+                    await ctx.createWorktree(input.repoPath, newTask.id, newTask.branchName || '', repo.copyFiles || '', repo.worktreePath || '');
 
                     console.log(`[tRPC] Ensuring terminal for task ${newTask.id}`);
                     await ctx.ensureTerminalForTask(newTask.id, input.repoPath);
@@ -155,6 +172,9 @@ export const appRouter = router({
             const task = getTaskById(input.taskId);
             if (!task) throw new Error('Task not found');
 
+            // Get repository to access worktreePath
+            const repo = getRepositoryByPath(input.repoPath);
+
             // Cleanup side effects
             if (ctx.shutdownTerminalForTask) {
                 console.log(`[tRPC] Shutting down terminal for task ${input.taskId}`);
@@ -163,7 +183,7 @@ export const appRouter = router({
             if (input.repoPath && ctx.removeWorktree) {
                 console.log(`[tRPC] Removing worktree and branch for task ${input.taskId} (${task.branchName})`);
                 try {
-                    await ctx.removeWorktree(input.repoPath, input.taskId, task.branchName);
+                    await ctx.removeWorktree(input.repoPath, input.taskId, task.branchName, repo?.worktreePath || '');
                 } catch (e) {
                     console.error(`[tRPC] Failed to remove worktree/branch:`, e);
                 }
@@ -177,7 +197,7 @@ export const appRouter = router({
     getGitStatus: publicProcedure
         .input(z.object({ repoPath: z.string(), taskId: z.string().optional() }))
         .query(async ({ input }) => {
-            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            const cwd = input.taskId ? getWorktreePathForTask(input.repoPath, input.taskId) : input.repoPath;
             const branch = await runGit('git branch --show-current', cwd, input.repoPath);
             const status = await runGit('git status --short', cwd, input.repoPath);
             return { branch, status };
@@ -185,7 +205,7 @@ export const appRouter = router({
     getGitDiff: publicProcedure
         .input(z.object({ repoPath: z.string(), taskId: z.string().optional() }))
         .query(async ({ input }) => {
-            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            const cwd = input.taskId ? getWorktreePathForTask(input.repoPath, input.taskId) : input.repoPath;
             const diff = await runGit('git diff', cwd, input.repoPath);
             return { diff };
         }),
@@ -196,7 +216,7 @@ export const appRouter = router({
             message: z.string(),
         }))
         .mutation(async ({ input }) => {
-            const cwd = input.taskId ? path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId) : input.repoPath;
+            const cwd = input.taskId ? getWorktreePathForTask(input.repoPath, input.taskId) : input.repoPath;
             await runGit('git add .', cwd, input.repoPath);
             await runGit(`git commit -m "${input.message}"`, cwd, input.repoPath);
             return { success: true };
@@ -204,7 +224,7 @@ export const appRouter = router({
     getWorktreePath: publicProcedure
         .input(z.object({ repoPath: z.string(), taskId: z.string() }))
         .query(({ input }) => {
-            const worktreePath = path.join(input.repoPath, '.vibetree', 'worktrees', input.taskId);
+            const worktreePath = getWorktreePathForTask(input.repoPath, input.taskId);
             return { path: worktreePath };
         }),
 

@@ -52,6 +52,9 @@
     "copyFiles": "ワークツリーにコピーするファイル",
     "copyFilesPlaceholder": ".env\n.env.local",
     "copyFilesHelp": "1行に1つのパス（リポジトリルートからの相対パスまたは絶対パス）。これらのファイルは各新しいワークツリーにコピーされます（例：.env）。",
+    "worktreePath": "ワークツリー基本パス（オプション）",
+    "worktreePathPlaceholder": "/Users/username/worktrees",
+    "worktreePathHelp": "ワークツリー用のカスタムディレクトリ。設定されていない場合、ワークツリーは [repo]/.vibetree/worktrees/ に作成されます",
     "saveConfiguration": "設定を保存",
     "folderPickerError": "フォルダピッカーを開けませんでした。手動でパスを貼り付けてください。"
   },

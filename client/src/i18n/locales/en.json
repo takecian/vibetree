@@ -52,6 +52,9 @@
     "copyFiles": "Files to copy into worktrees",
     "copyFilesPlaceholder": ".env\n.env.local",
     "copyFilesHelp": "One path per line (relative to repo root or absolute). These files are copied into each new worktree (e.g. .env).",
+    "worktreePath": "Worktree base path (optional)",
+    "worktreePathPlaceholder": "/Users/username/worktrees",
+    "worktreePathHelp": "Custom directory for worktrees. If not set, worktrees are created in [repo]/.vibetree/worktrees/",
     "saveConfiguration": "Save Configuration",
     "folderPickerError": "Failed to open folder picker. Please paste the path manually."
   },

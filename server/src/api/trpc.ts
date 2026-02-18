@@ -3,10 +3,10 @@ import { AppConfig } from '../types';
 
 export interface Context {
     getState: () => AppConfig;
-    createWorktree?: (repoPath: string, taskId: string, branchName: string, copyFiles?: string) => Promise<any>;
+    createWorktree?: (repoPath: string, taskId: string, branchName: string, copyFiles?: string, worktreePath?: string) => Promise<any>;
     ensureTerminalForTask?: (taskId: string, repoPath: string) => Promise<void>;
     runAiForTask?: (taskId: string, repoPath: string) => Promise<void>;
-    removeWorktree?: (repoPath: string, taskId: string, branchName?: string) => Promise<any>;
+    removeWorktree?: (repoPath: string, taskId: string, branchName?: string, worktreePath?: string) => Promise<any>;
     shutdownTerminalForTask?: (taskId: string) => Promise<void>;
 }
 

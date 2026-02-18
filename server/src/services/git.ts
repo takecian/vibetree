@@ -30,13 +30,17 @@ function sanitizeBranchName(branchName: string): string {
 }
 
 // Helper to run git commands
-async function runGit(command: string, cwd: string, repoPath: string): Promise<string> {
+async function runGit(command: string, cwd: string, repoPath: string, options?: { maxBuffer?: number }): Promise<string> {
     const workingDir = cwd || repoPath;
 
     if (!workingDir) throw new Error("Repository path not set");
 
     try {
-        const { stdout, stderr } = await execAsync(command, { cwd: workingDir });
+        const execOptions: { cwd: string; maxBuffer?: number } = { cwd: workingDir };
+        if (options?.maxBuffer) {
+            execOptions.maxBuffer = options.maxBuffer;
+        }
+        const { stdout } = await execAsync(command, execOptions);
         return stdout.trim();
     } catch (error: any) {
         console.error(`Git error: ${command}`, error);
@@ -250,12 +254,40 @@ async function updatePR(repoPath: string, taskId: string, prData: { title?: stri
 
 async function getDefaultBranch(repoPath: string): Promise<string> {
     try {
-        const output = await runGit('git remote show origin', repoPath, repoPath);
-        const match = output.match(/HEAD branch: (.+)/);
-        return match ? match[1] : 'main';
+        // Try the most efficient method first: query the symbolic ref directly
+        // This doesn't list all branches and is much faster
+        const output = await runGit('git symbolic-ref refs/remotes/origin/HEAD', repoPath, repoPath);
+        // Output format is "refs/remotes/origin/main" - extract the branch name
+        const match = output.match(/refs\/remotes\/origin\/(.+)/);
+        if (match) {
+            return match[1];
+        }
     } catch (e) {
-        return 'main';
+        // If symbolic-ref fails (not set), try setting it first then querying again
+        try {
+            await runGit('git remote set-head origin --auto', repoPath, repoPath);
+            const output = await runGit('git symbolic-ref refs/remotes/origin/HEAD', repoPath, repoPath);
+            const match = output.match(/refs\/remotes\/origin\/(.+)/);
+            if (match) {
+                return match[1];
+            }
+        } catch (e2) {
+            // If that fails too, fall back to parsing git remote show output
+            // Use increased maxBuffer to handle repos with many branches
+            try {
+                const output = await runGit('git remote show origin', repoPath, repoPath, { maxBuffer: 10 * 1024 * 1024 });
+                const match = output.match(/HEAD branch: (.+)/);
+                if (match) {
+                    return match[1];
+                }
+            } catch (e3) {
+                console.warn('[Git] Could not determine default branch, using "main" as fallback');
+            }
+        }
     }
+    
+    // Final fallback
+    return 'main';
 }
 
 async function pullMainBranch(repoPath: string): Promise<{ success: boolean; message: string }> {

@@ -20,7 +20,9 @@ db.exec(`
     CREATE TABLE IF NOT EXISTS repositories (
         id TEXT PRIMARY KEY,
         path TEXT UNIQUE NOT NULL,
-        copy_files TEXT
+        copy_files TEXT,
+        worktree_path TEXT,
+        ai_tool TEXT
     );
 
     CREATE TABLE IF NOT EXISTS tasks (
@@ -67,6 +69,15 @@ try {
     }
 }
 
+try {
+    db.exec("ALTER TABLE repositories ADD COLUMN ai_tool TEXT");
+    console.log("[DB] Added ai_tool column to repositories table");
+} catch (e: any) {
+    if (!e.message.includes('duplicate column name')) {
+        console.error("[DB] Migration failed:", e.message);
+    }
+}
+
 export function normalizePath(p: string): string {
     return p ? p.replace(/[/\\]+$/, '') : '';
 }
@@ -78,7 +89,8 @@ export function getRepositories(): Repository[] {
         id: row.id,
         path: row.path,
         copyFiles: row.copy_files,
-        worktreePath: row.worktree_path
+        worktreePath: row.worktree_path,
+        aiTool: row.ai_tool || undefined
     }));
 }
 
@@ -89,7 +101,8 @@ export function getRepositoryById(id: string): Repository | undefined {
         id: row.id,
         path: row.path,
         copyFiles: row.copy_files,
-        worktreePath: row.worktree_path
+        worktreePath: row.worktree_path,
+        aiTool: row.ai_tool || undefined
     };
 }
 
@@ -101,23 +114,24 @@ export function getRepositoryByPath(rawPath: string): Repository | undefined {
         id: row.id,
         path: row.path,
         copyFiles: row.copy_files,
-        worktreePath: row.worktree_path
+        worktreePath: row.worktree_path,
+        aiTool: row.ai_tool || undefined
     };
 }
 
-export function addRepository(rawPath: string, copyFiles?: string, worktreePath?: string): Repository {
+export function addRepository(rawPath: string, copyFiles?: string, worktreePath?: string, aiTool?: string): Repository {
     const normalized = normalizePath(rawPath);
     const existing = getRepositoryByPath(normalized);
     if (existing) return existing;
 
     const id = uuidv4();
-    db.prepare('INSERT INTO repositories (id, path, copy_files, worktree_path) VALUES (?, ?, ?, ?)')
-        .run(id, normalized, copyFiles || '', worktreePath || '');
+    db.prepare('INSERT INTO repositories (id, path, copy_files, worktree_path, ai_tool) VALUES (?, ?, ?, ?, ?)')
+        .run(id, normalized, copyFiles || '', worktreePath || '', aiTool || null);
 
-    return { id, path: normalized, copyFiles, worktreePath };
+    return { id, path: normalized, copyFiles, worktreePath, aiTool: aiTool || undefined };
 }
 
-export function updateRepository(id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string }): Repository {
+export function updateRepository(id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string }): Repository {
     if (updates.path) updates.path = normalizePath(updates.path);
 
     const fields = [];
@@ -133,6 +147,10 @@ export function updateRepository(id: string, updates: { path?: string; copyFiles
     if (updates.worktreePath !== undefined) {
         fields.push('worktree_path = ?');
         values.push(updates.worktreePath);
+    }
+    if (updates.aiTool !== undefined) {
+        fields.push('ai_tool = ?');
+        values.push(updates.aiTool.trim() ? updates.aiTool : null);
     }
 
     if (fields.length > 0) {

@@ -37,6 +37,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "浏览文件夹",
     "aiAssistant": "AI助手",
+    "defaultAiTool": "默认（{{tool}}）",
     "checkingTools": "正在检查工具...",
     "copyFiles": "要复制到工作树的文件",
     "copyFilesPlaceholder": ".env\n.env.local",
@@ -99,6 +100,8 @@
     "table": {
       "name": "存储库",
       "path": "路径",
+      "aiTool": "AI 工具",
+      "defaultAiTool": "默认（{{tool}}）",
       "worktreeBasePath": "工作树基础路径",
       "actions": "操作",
       "edit": "编辑"

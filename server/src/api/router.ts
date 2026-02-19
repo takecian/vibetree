@@ -84,9 +84,9 @@ export const appRouter = router({
     }),
 
     addRepository: publicProcedure
-        .input(z.object({ path: z.string(), copyFiles: z.string().optional(), worktreePath: z.string().optional() }))
+        .input(z.object({ path: z.string(), copyFiles: z.string().optional(), worktreePath: z.string().optional(), aiTool: z.string().optional() }))
         .mutation(async ({ input }) => {
-            return addRepository(input.path, input.copyFiles, input.worktreePath);
+            return addRepository(input.path, input.copyFiles, input.worktreePath, input.aiTool);
         }),
     updateRepository: publicProcedure
         .input(z.object({
@@ -95,6 +95,7 @@ export const appRouter = router({
                 path: z.string().optional(),
                 copyFiles: z.string().optional(),
                 worktreePath: z.string().optional(),
+                aiTool: z.string().optional(),
             }),
         }))
         .mutation(async ({ input }) => {
@@ -143,8 +144,9 @@ export const appRouter = router({
                     console.log(`[tRPC] Ensuring terminal for task ${newTask.id}`);
                     await ctx.ensureTerminalForTask(newTask.id, input.repoPath);
 
-                    console.log(`[tRPC] Running AI for task ${newTask.id}`);
-                    ctx.runAiForTask(newTask.id, input.repoPath).catch(e => console.error(`[tRPC] runAiForTask error:`, e));
+                    const effectiveAiTool = repo.aiTool || ctx.getState().aiTool;
+                    console.log(`[tRPC] Running AI for task ${newTask.id} with tool ${effectiveAiTool}`);
+                    ctx.runAiForTask(newTask.id, input.repoPath, effectiveAiTool).catch(e => console.error(`[tRPC] runAiForTask error:`, e));
                 } catch (e) {
                     console.error(`[tRPC] Side effects failed for task ${newTask.id}:`, e);
                 }

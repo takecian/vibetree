@@ -141,10 +141,11 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
     }
 
     /** Run AI tool with task context (call when task is moved to in progress). */
-    async function runAiForTask(taskId: string, repoPath: string): Promise<void> {
+    async function runAiForTask(taskId: string, repoPath: string, aiToolOverride?: string): Promise<void> {
         const session = sessions[taskId];
         if (!session) return;
-        const { aiTool } = getState();
+        const { aiTool: globalAiTool } = getState();
+        const aiTool = aiToolOverride || globalAiTool;
         if (!aiTool) return;
         const safeAiToolPattern = /^[a-zA-Z0-9._-]+$/;
         if (!safeAiToolPattern.test(aiTool)) return;

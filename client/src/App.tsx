@@ -12,16 +12,18 @@ import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { BrowserRouter } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
+import { Repository } from './types';
 
 const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
 function AppContent() {
   const { t } = useTranslation();
-  const { config, updateConfig, repositories, loading, addRepository, deleteRepository } = useTasks();
+  const { config, updateConfig, repositories, loading, addRepository, updateRepository, deleteRepository } = useTasks();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [editingRepository, setEditingRepository] = useState<Repository | null>(null);
   const [closeRepoConfirmation, setCloseRepoConfirmation] = useState<{ id: string; path: string; name: string } | null>(null);
   
   // Load selected task IDs from localStorage
@@ -56,7 +58,7 @@ function AppContent() {
   const handleAddRepo = async (path: string, aiTool: string, copyFiles: string, worktreePath: string) => {
     const normalized = normalizePath(path);
     await addRepository(normalized, copyFiles, worktreePath);
-    await updateConfig({ repoPath: normalized, aiTool, copyFiles, worktreePath });
+    await updateConfig({ repoPath: normalized, aiTool });
     setActiveTabId(normalized);
     setIsAddingRepo(false);
   };
@@ -116,8 +118,8 @@ function AppContent() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       {(showAiToolOnlyModal || isAddingRepo || showSettings) && (
         <RepoModal
-          onSave={showSettings ? (_path, aiTool, copyFiles, worktreePath) => {
-            updateConfig({ aiTool, copyFiles, worktreePath });
+          onSave={showSettings ? (_path, aiTool, _copyFiles, _worktreePath) => {
+            updateConfig({ aiTool });
             setShowSettings(false);
           } : handleAddRepo}
           initialConfig={config}
@@ -130,6 +132,21 @@ function AppContent() {
           hideRepoPath={(showAiToolOnlyModal && !isAddingRepo) || showSettings}
           hideAiAssistant={isAddingRepo && !showAiToolOnlyModal && !showSettings}
           hideCopyFiles={showSettings}
+          hideWorktreePath={showSettings}
+        />
+      )}
+
+      {editingRepository && (
+        <RepoModal
+          onSave={async (_path, _aiTool, copyFiles, worktreePath) => {
+            await updateRepository(editingRepository.id, { copyFiles, worktreePath });
+            setEditingRepository(null);
+          }}
+          initialConfig={config}
+          initialRepository={editingRepository}
+          onClose={() => setEditingRepository(null)}
+          hideRepoPath={true}
+          hideAiAssistant={true}
         />
       )}
 
@@ -168,6 +185,42 @@ function AppContent() {
         onTabClose={handleCloseTab}
         onAddTab={() => setIsAddingRepo(true)}
       />
+
+      {repositories.length > 0 && (
+        <div className="border-b border-slate-700 bg-slate-800/40 px-6 py-3 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="text-left text-slate-400">
+                <th className="py-2 pr-4 font-medium">{t('repository.table.name')}</th>
+                <th className="py-2 pr-4 font-medium">{t('repository.table.path')}</th>
+                <th className="py-2 pr-4 font-medium">{t('repository.table.worktreeBasePath')}</th>
+                <th className="py-2 font-medium">{t('repository.table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {repositories.map((repo) => {
+                const repoName = repo.path.split(/[/\\]/).filter(Boolean).pop() || repo.path;
+                const defaultWorktreePath = `${repo.path}/.vibetree/worktrees`;
+                return (
+                  <tr key={repo.id} className="border-t border-slate-700/50 text-slate-200">
+                    <td className="py-2 pr-4">{repoName}</td>
+                    <td className="py-2 pr-4 font-mono text-xs text-slate-400">{repo.path}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{repo.worktreePath || defaultWorktreePath}</td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => setEditingRepository(repo)}
+                        className="px-3 py-1.5 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors"
+                      >
+                        {t('repository.table.edit')}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTabId ? (

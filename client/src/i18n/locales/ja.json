@@ -107,6 +107,13 @@
     "confirm": "強制プッシュ"
   },
   "repository": {
+    "table": {
+      "name": "リポジトリ",
+      "path": "パス",
+      "worktreeBasePath": "ワークツリー基本パス",
+      "actions": "操作",
+      "edit": "編集"
+    },
     "closeConfirmation": {
       "title": "リポジトリを閉じる",
       "message": "「{{name}}」を閉じてもよろしいですか？ワークスペースから削除されます。",

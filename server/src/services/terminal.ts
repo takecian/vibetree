@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { Server, Socket } from 'socket.io';
 import { Task, AppConfig } from '../types';
+import { getRepositoryByPath } from './db';
 
 type GetTaskByIdFunction = (taskId: string, repoPath: string) => Promise<Task | undefined>;
 
@@ -65,6 +66,12 @@ function ensureSpawnHelperExecutable() {
     }
 }
 
+function resolveTaskWorktreePath(repoPath: string, taskId: string): string {
+    const repo = getRepositoryByPath(repoPath);
+    const baseWorktreePath = repo?.worktreePath || path.join(repoPath, '.vibetree', 'worktrees');
+    return path.join(baseWorktreePath, taskId);
+}
+
 function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTaskByIdFunction) {
     ensureSpawnHelperExecutable();
     const sessions: { [key: string]: TerminalSession } = {};
@@ -122,7 +129,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
     async function ensureTerminalForTask(taskId: string, repoPath: string): Promise<void> {
         if (sessions[taskId]) return;
         if (!repoPath) return;
-        const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+        const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
         if (!fs.existsSync(worktreePath)) return;
         try {
             fs.accessSync(worktreePath, fs.constants.R_OK | fs.constants.X_OK);
@@ -182,7 +189,7 @@ function setupTerminal(io: Server, getState: () => AppConfig, getTaskById: GetTa
                     taskEnv.TASK_ID = task.id;
                     taskEnv.TASK_TITLE = task.title;
                     taskEnv.TASK_DESCRIPTION = task.description;
-                    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+                    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
                     if (fs.existsSync(worktreePath)) workingDir = worktreePath;
                 }
             }

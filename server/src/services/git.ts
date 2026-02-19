@@ -4,11 +4,18 @@ import fs from 'fs';
 import util from 'util';
 import { Request, Response, Application } from 'express';
 import { AppConfig } from '../types'; // Assuming AppConfig is defined in types.ts
+import { getRepositoryByPath } from './db';
 
 const execAsync = util.promisify(exec);
 
 interface GitState {
     repoPath: string;
+}
+
+function resolveTaskWorktreePath(repoPath: string, taskId: string): string {
+    const repo = getRepositoryByPath(repoPath);
+    const baseWorktreePath = repo?.worktreePath || path.join(repoPath, '.vibetree', 'worktrees');
+    return path.join(baseWorktreePath, taskId);
 }
 
 // Helper to validate and sanitize branch names for git commands
@@ -140,7 +147,7 @@ async function removeWorktree(repoPath: string, taskId: string, branchName?: str
 }
 
 async function rebase(repoPath: string, taskId: string, baseBranch: string): Promise<{ success: boolean; message?: string }> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -150,7 +157,7 @@ async function rebase(repoPath: string, taskId: string, baseBranch: string): Pro
 }
 
 async function createPR(repoPath: string, taskId: string, prData: { title: string; body?: string; baseBranch: string }): Promise<{ success: boolean; url?: string; message?: string }> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -199,7 +206,7 @@ async function stageAndCommit(worktreePath: string, repoPath: string, commitMess
 }
 
 async function pushBranch(repoPath: string, taskId: string, commitMessage: string): Promise<{ success: boolean; message?: string }> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -224,7 +231,7 @@ async function pushBranch(repoPath: string, taskId: string, commitMessage: strin
 }
 
 async function pushBranchForce(repoPath: string, taskId: string, commitMessage: string): Promise<{ success: boolean; message?: string }> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -239,7 +246,7 @@ async function pushBranchForce(repoPath: string, taskId: string, commitMessage: 
 }
 
 async function getBranchDiff(repoPath: string, taskId: string, baseBranch: string): Promise<string> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -249,7 +256,7 @@ async function getBranchDiff(repoPath: string, taskId: string, baseBranch: strin
 }
 
 async function updatePR(repoPath: string, taskId: string, prData: { title?: string; body?: string }): Promise<{ success: boolean; message?: string }> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         throw new Error("Worktree does not exist");
     }
@@ -354,7 +361,7 @@ async function checkPRMergeStatus(repoPath: string, prUrl: string): Promise<bool
 }
 
 async function hasChangesForPR(repoPath: string, taskId: string, baseBranch: string): Promise<boolean> {
-    const worktreePath = path.join(repoPath, '.vibetree', 'worktrees', taskId);
+    const worktreePath = resolveTaskWorktreePath(repoPath, taskId);
     if (!fs.existsSync(worktreePath)) {
         return false;
     }

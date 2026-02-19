@@ -179,6 +179,32 @@ describe('router', () => {
         expect(mockEnsureTerminalForTask).toHaveBeenCalled();
         expect(mockRunAiForTask).toHaveBeenCalled();
       });
+
+      it('should use repository aiTool when creating task', async () => {
+        const caller = appRouter.createCaller(createContext());
+        await caller.updateRepository({
+          id: testRepo.id,
+          updates: { aiTool: 'gemini' },
+        });
+
+        const result = await caller.createTask({
+          repoPath: testRepoPath,
+          title: 'Task with repo AI tool',
+        });
+
+        expect(mockRunAiForTask).toHaveBeenCalledWith(result.id, testRepoPath, 'gemini');
+      });
+
+      it('should fall back to global aiTool when repository aiTool is not set', async () => {
+        const caller = appRouter.createCaller(createContext());
+
+        const result = await caller.createTask({
+          repoPath: testRepoPath,
+          title: 'Task with global AI tool',
+        });
+
+        expect(mockRunAiForTask).toHaveBeenCalledWith(result.id, testRepoPath, 'claude');
+      });
     });
 
     describe('updateTask', () => {

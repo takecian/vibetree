@@ -3,6 +3,7 @@ export interface Repository {
     path: string;
     copyFiles?: string;
     worktreePath?: string;
+    aiTool?: string;
 }
 
 export interface Task {

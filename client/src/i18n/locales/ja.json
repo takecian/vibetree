@@ -48,6 +48,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "フォルダを選択",
     "aiAssistant": "AIアシスタント",
+    "defaultAiTool": "デフォルト（{{tool}}）",
     "checkingTools": "ツールを確認中...",
     "copyFiles": "ワークツリーにコピーするファイル",
     "copyFilesPlaceholder": ".env\n.env.local",
@@ -110,6 +111,8 @@
     "table": {
       "name": "リポジトリ",
       "path": "パス",
+      "aiTool": "AIツール",
+      "defaultAiTool": "デフォルト（{{tool}}）",
       "worktreeBasePath": "ワークツリー基本パス",
       "actions": "操作",
       "edit": "編集"

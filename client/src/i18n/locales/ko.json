@@ -94,6 +94,13 @@
     "confirm": "강제 푸시"
   },
   "repository": {
+    "table": {
+      "name": "저장소",
+      "path": "경로",
+      "worktreeBasePath": "작업 트리 기본 경로",
+      "actions": "작업",
+      "edit": "편집"
+    },
     "closeConfirmation": {
       "title": "저장소 닫기",
       "message": "\"{{name}}\"을(를) 닫으시겠습니까? 작업 공간에서 제거됩니다.",

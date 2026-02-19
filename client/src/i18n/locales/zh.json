@@ -94,6 +94,13 @@
     "confirm": "强制推送"
   },
   "repository": {
+    "table": {
+      "name": "存储库",
+      "path": "路径",
+      "worktreeBasePath": "工作树基础路径",
+      "actions": "操作",
+      "edit": "编辑"
+    },
     "closeConfirmation": {
       "title": "关闭存储库",
       "message": "确定要关闭\"{{name}}\"吗？这将从工作区中删除它。",

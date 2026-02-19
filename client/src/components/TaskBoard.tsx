@@ -41,9 +41,9 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
         setIsCreateModalOpen(false);
     };
 
-    const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string) => {
+    const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string, worktreePath: string) => {
         if (currentRepo) {
-            await updateRepository(currentRepo.id, { path, copyFiles });
+            await updateRepository(currentRepo.id, { path, copyFiles, worktreePath });
             setIsRepoSettingsOpen(false);
         }
     };

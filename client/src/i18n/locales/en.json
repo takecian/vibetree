@@ -105,6 +105,13 @@
     "confirm": "Force Push"
   },
   "repository": {
+    "table": {
+      "name": "Repository",
+      "path": "Path",
+      "worktreeBasePath": "Worktree Base Path",
+      "actions": "Actions",
+      "edit": "Edit"
+    },
     "closeConfirmation": {
       "title": "Close Repository",
       "message": "Are you sure you want to close \"{{name}}\"? This will remove it from your workspace.",

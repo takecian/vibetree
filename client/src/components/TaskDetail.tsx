@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
@@ -22,7 +22,7 @@ interface TaskDetailProps {
 export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDetailProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { addTask, deleteTask } = useTasks();
+    const menuRef = useRef<HTMLDivElement>(null);
     const { destroyTerminalSession } = useTerminals();
 
     // Constants
@@ -90,6 +90,22 @@ export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDeta
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [task?.prUrl, task?.prMerged, effectiveId, repoPath]);
 
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowOptionsMenu(false);
+            }
+        };
+
+        if (showOptionsMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showOptionsMenu]);
 
     if (!task) return null; // Don't show loading in sidebar, just null if not found
 
@@ -334,7 +350,7 @@ export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDeta
                     <button className={getTabButtonClasses(activeTab === 'diff')} onClick={() => setActiveTab('diff')}>
                         <GitBranch size={16} /> {t('taskDetail.tabs.diff')}
                     </button>
-                    <div className="relative flex items-center">
+                    <div className="relative flex items-center" ref={menuRef}>
                         <button className="bg-transparent border-0 text-slate-400 cursor-pointer p-2 rounded-full flex items-center justify-center hover:bg-slate-600 hover:text-slate-50" onClick={() => setShowOptionsMenu(!showOptionsMenu)}>
                             <MoreVertical size={18} />
                         </button>

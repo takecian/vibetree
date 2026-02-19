@@ -79,7 +79,9 @@
     "rebase": "变基",
     "createPR": "创建PR",
     "push": "推送",
+    "duplicate": "复制",
     "pushError": "推送更改失败",
+    "duplicateError": "复制任务失败",
     "forcePushError": "强制推送失败",
     "rebaseConfirmation": {
       "title": "变基任务",

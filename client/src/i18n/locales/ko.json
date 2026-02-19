@@ -79,7 +79,9 @@
     "rebase": "리베이스",
     "createPR": "PR 생성",
     "push": "푸시",
+    "duplicate": "복제",
     "pushError": "변경 사항 푸시에 실패했습니다",
+    "duplicateError": "작업 복제에 실패했습니다",
     "forcePushError": "강제 푸시에 실패했습니다",
     "rebaseConfirmation": {
       "title": "작업 리베이스",

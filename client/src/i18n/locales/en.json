@@ -74,7 +74,9 @@
     "rebase": "Rebase",
     "createPR": "Create PR",
     "push": "Push",
+    "duplicate": "Duplicate",
     "pushError": "Failed to push changes",
+    "duplicateError": "Failed to duplicate task",
     "forcePushError": "Failed to force push changes",
     "rebaseConfirmation": {
       "title": "Rebase Task",

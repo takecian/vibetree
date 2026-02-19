@@ -138,15 +138,15 @@ function AppContent() {
 
       {editingRepository && (
         <RepoModal
-          onSave={async (_path, _aiTool, copyFiles, worktreePath) => {
-            await updateRepository(editingRepository.id, { copyFiles, worktreePath });
+          onSave={async (_path, aiTool, copyFiles, worktreePath) => {
+            await updateRepository(editingRepository.id, { copyFiles, worktreePath, aiTool });
             setEditingRepository(null);
           }}
           initialConfig={config}
           initialRepository={editingRepository}
           onClose={() => setEditingRepository(null)}
           hideRepoPath={true}
-          hideAiAssistant={true}
+          allowDefaultAiTool={true}
         />
       )}
 
@@ -193,6 +193,7 @@ function AppContent() {
               <tr className="text-left text-slate-400">
                 <th className="py-2 pr-4 font-medium">{t('repository.table.name')}</th>
                 <th className="py-2 pr-4 font-medium">{t('repository.table.path')}</th>
+                <th className="py-2 pr-4 font-medium">{t('repository.table.aiTool')}</th>
                 <th className="py-2 pr-4 font-medium">{t('repository.table.worktreeBasePath')}</th>
                 <th className="py-2 font-medium">{t('repository.table.actions')}</th>
               </tr>
@@ -205,6 +206,13 @@ function AppContent() {
                   <tr key={repo.id} className="border-t border-slate-700/50 text-slate-200">
                     <td className="py-2 pr-4">{repoName}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-slate-400">{repo.path}</td>
+                    <td className="py-2 pr-4 text-xs">
+                      {repo.aiTool ? (
+                        <span className="capitalize">{repo.aiTool}</span>
+                      ) : (
+                        <span className="text-slate-400">{t('repository.table.defaultAiTool', { tool: config?.aiTool || 'claude' })}</span>
+                      )}
+                    </td>
                     <td className="py-2 pr-4 font-mono text-xs">{repo.worktreePath || defaultWorktreePath}</td>
                     <td className="py-2">
                       <button

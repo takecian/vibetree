@@ -48,6 +48,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "Browse Folder",
     "aiAssistant": "AI Assistant",
+    "defaultAiTool": "Default ({{tool}})",
     "checkingTools": "Checking tools...",
     "copyFiles": "Files to copy into worktrees",
     "copyFilesPlaceholder": ".env\n.env.local",
@@ -110,6 +111,8 @@
     "table": {
       "name": "Repository",
       "path": "Path",
+      "aiTool": "AI Tool",
+      "defaultAiTool": "Default ({{tool}})",
       "worktreeBasePath": "Worktree Base Path",
       "actions": "Actions",
       "edit": "Edit"

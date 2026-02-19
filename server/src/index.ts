@@ -55,7 +55,7 @@ app.use(
             getState: () => STATE,
             createWorktree: (repoPath, taskId, branchName, copyFiles, worktreePath) => createWorktree(repoPath, taskId, branchName, copyFiles ?? STATE.copyFiles, worktreePath),
             ensureTerminalForTask: (taskId, repoPath) => ensureTerminalForTask(taskId, repoPath),
-            runAiForTask: (taskId, repoPath) => runAiForTask(taskId, repoPath),
+            runAiForTask: (taskId, repoPath, aiToolOverride) => runAiForTask(taskId, repoPath, aiToolOverride),
             removeWorktree: (repoPath, taskId, branchName, worktreePath) => import('./services/git').then(m => m.removeWorktree(repoPath, taskId, branchName, worktreePath)),
             shutdownTerminalForTask,
         }),

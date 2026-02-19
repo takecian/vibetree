@@ -7,15 +7,16 @@ import { AppConfig } from '../types';
 interface RepoModalProps {
     onSave: (path: string, aiTool: string, copyFiles: string, worktreePath: string) => void;
     initialConfig: AppConfig | null;
-    initialRepository?: { copyFiles?: string; worktreePath?: string };
+    initialRepository?: { copyFiles?: string; worktreePath?: string; aiTool?: string };
     onClose?: () => void;
     hideRepoPath?: boolean;
     hideAiAssistant?: boolean;
     hideCopyFiles?: boolean;
     hideWorktreePath?: boolean;
+    allowDefaultAiTool?: boolean;
 }
 
-export function RepoModal({ onSave, initialConfig, initialRepository, onClose, hideRepoPath, hideAiAssistant, hideCopyFiles, hideWorktreePath }: RepoModalProps) {
+export function RepoModal({ onSave, initialConfig, initialRepository, onClose, hideRepoPath, hideAiAssistant, hideCopyFiles, hideWorktreePath, allowDefaultAiTool }: RepoModalProps) {
     const { t } = useTranslation();
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
@@ -28,11 +29,15 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
 
     useEffect(() => {
         if (initialConfig?.repoPath) setPath(initialConfig.repoPath);
-        if (initialConfig?.aiTool) setAiTool(initialConfig.aiTool);
+        if (allowDefaultAiTool && initialRepository) {
+            setAiTool(initialRepository.aiTool ?? '');
+        } else if (initialConfig?.aiTool) {
+            setAiTool(initialConfig.aiTool);
+        }
         if (initialConfig?.copyFiles !== undefined) setCopyFiles(initialConfig.copyFiles ?? '');
         if (initialRepository?.copyFiles !== undefined) setCopyFiles(initialRepository.copyFiles ?? '');
         if (initialRepository?.worktreePath !== undefined) setWorktreePath(initialRepository.worktreePath ?? '');
-    }, [initialConfig, initialRepository]);
+    }, [initialConfig, initialRepository, allowDefaultAiTool]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -124,6 +129,20 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                         <div className="mb-6">
                             <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiAssistant')}</label>
                             <div className="grid grid-cols-3 gap-3">
+                                {allowDefaultAiTool && (
+                                    <label className={getToolOptionClasses(aiTool === '', true)}>
+                                        <input
+                                            type="radio"
+                                            name="aiTool"
+                                            value=""
+                                            checked={aiTool === ''}
+                                            onChange={handleAiToolChange}
+                                            className="hidden"
+                                        />
+                                        <span className="font-medium">{t('repoModal.defaultAiTool', { tool: initialConfig?.aiTool || 'claude' })}</span>
+                                        <span className="text-blue-400 text-[10px]">◎</span>
+                                    </label>
+                                )}
                                 {['claude', 'codex', 'gemini'].map(tool => {
                                     const isAvailable = !!availableTools[tool as keyof typeof availableTools];
                                     const isSelected = aiTool === tool;

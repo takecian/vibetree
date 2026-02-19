@@ -16,7 +16,7 @@ interface TaskBoardProps {
 
 export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardProps) {
     const { t } = useTranslation();
-    const { addTask, repositories, updateRepository, createTaskMutation } = useTasks();
+    const { addTask, repositories, updateRepository, createTaskMutation, config } = useTasks();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
     const [isPulling, setIsPulling] = useState<boolean>(false);
@@ -41,9 +41,9 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
         setIsCreateModalOpen(false);
     };
 
-    const handleUpdateRepo = async (path: string, _aiTool: string, copyFiles: string, worktreePath: string) => {
+    const handleUpdateRepo = async (path: string, aiTool: string, copyFiles: string, worktreePath: string) => {
         if (currentRepo) {
-            await updateRepository(currentRepo.id, { path, copyFiles, worktreePath });
+            await updateRepository(currentRepo.id, { path, copyFiles, worktreePath, aiTool });
             setIsRepoSettingsOpen(false);
         }
     };
@@ -75,9 +75,10 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
             {isRepoSettingsOpen && currentRepo && (
                 <RepoModal
                     onSave={handleUpdateRepo}
-                    initialConfig={{ ...currentRepo, repoPath: currentRepo.path, aiTool: '' }}
+                    initialConfig={config}
+                    initialRepository={currentRepo}
                     onClose={() => setIsRepoSettingsOpen(false)}
-                    hideAiAssistant={true}
+                    allowDefaultAiTool={true}
                 />
             )}
 

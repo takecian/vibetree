@@ -16,12 +16,13 @@ interface TaskDetailProps {
     taskId: string;
     repoPath: string;
     onClose?: () => void;
+    onTaskSelect?: (taskId: string | null) => void;
 }
 
-export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
+export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDetailProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { deleteTask } = useTasks();
+    const { addTask, deleteTask } = useTasks();
     const { destroyTerminalSession } = useTerminals();
 
     // Constants
@@ -107,6 +108,17 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
     const handleDelete = () => {
         setShowOptionsMenu(false);
         setDeleteModalOpen(true);
+    };
+
+    const handleDuplicate = async () => {
+        setShowOptionsMenu(false);
+        try {
+            const duplicatedTask = await addTask(repoPath, task.title, task.description || '');
+            onTaskSelect?.(duplicatedTask.id);
+        } catch (e) {
+            console.error('Failed to duplicate task', e);
+            alert(t('taskDetail.duplicateError'));
+        }
     };
 
     const handleConfirmDelete = async () => {
@@ -336,6 +348,9 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
                                         <GitPullRequest size={16} className={pushMutation.isPending ? 'text-blue-400 animate-pulse' : ''} /> {t('taskDetail.push')}
                                     </button>
                                 )}
+                                <button onClick={handleDuplicate} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-slate-50 cursor-pointer text-left text-sm hover:bg-slate-600 border-b border-slate-700">
+                                    <ClipboardCopy size={16} /> {t('taskDetail.duplicate')}
+                                </button>
                                 <button onClick={handleDelete} className="flex items-center gap-2 w-full px-4 py-2.5 bg-transparent border-0 text-red-400 cursor-pointer text-left text-sm hover:bg-slate-600">
                                     <Trash2 size={16} /> {t('taskDetail.delete')}
                                 </button>
@@ -451,4 +466,3 @@ export function TaskDetail({ taskId, repoPath, onClose }: TaskDetailProps) {
         </div>
     );
 }
-

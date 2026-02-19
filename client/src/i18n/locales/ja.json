@@ -74,7 +74,9 @@
     "rebase": "リベース",
     "createPR": "PR作成",
     "push": "プッシュ",
+    "duplicate": "複製",
     "pushError": "変更のプッシュに失敗しました",
+    "duplicateError": "タスクの複製に失敗しました",
     "forcePushError": "強制プッシュに失敗しました",
     "rebaseConfirmation": {
       "title": "タスクをリベース",

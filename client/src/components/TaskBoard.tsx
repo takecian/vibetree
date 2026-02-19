@@ -153,7 +153,7 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col bg-slate-900 overflow-hidden relative">
                     {selectedTaskId ? (
-                        <TaskDetail key={selectedTaskId} taskId={selectedTaskId} repoPath={repoPath} />
+                        <TaskDetail key={selectedTaskId} taskId={selectedTaskId} repoPath={repoPath} onTaskSelect={onTaskSelect} />
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 to-black">
                             <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mb-6 border border-slate-700/50 backdrop-blur-sm grayscale opacity-50">

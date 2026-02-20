@@ -240,6 +240,53 @@ export const appRouter = router({
             return rebase(input.repoPath, input.taskId, input.baseBranch);
         }),
 
+    generatePRDraft: publicProcedure
+        .input(z.object({
+            repoPath: z.string(),
+            taskId: z.string(),
+        }))
+        .query(async ({ input, ctx }) => {
+            const task = getTaskById(input.taskId);
+            if (!task) throw new Error('Task not found');
+
+            const repo = getRepositoryByPath(input.repoPath);
+            const baseBranch = await getDefaultBranch(input.repoPath);
+            const diff = await getBranchDiff(input.repoPath, input.taskId, baseBranch);
+
+            if (!diff.trim()) {
+                return {
+                    title: task.title,
+                    body: task.description || '',
+                    baseBranch,
+                };
+            }
+
+            const effectiveAiTool = repo?.aiTool || ctx.getState().aiTool;
+            if (!effectiveAiTool) {
+                return {
+                    title: task.title,
+                    body: task.description || '',
+                    baseBranch,
+                };
+            }
+
+            try {
+                const summary = await generatePRSummary(effectiveAiTool, diff);
+                return {
+                    title: summary.title,
+                    body: summary.body,
+                    baseBranch,
+                };
+            } catch (e) {
+                console.warn('[tRPC] Failed to generate PR draft with AI, falling back to task info:', e);
+                return {
+                    title: task.title,
+                    body: task.description || '',
+                    baseBranch,
+                };
+            }
+        }),
+
     createPR: publicProcedure
         .input(z.object({
             repoPath: z.string(),

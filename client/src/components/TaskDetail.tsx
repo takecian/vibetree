@@ -465,8 +465,9 @@ export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDeta
             {isCreatePRModalOpen && (
                 <CreatePRModal
                     repoPath={repoPath}
-                    initialTitle={task.title}
-                    initialDescription={task.description}
+                    taskId={task.id}
+                    fallbackTitle={task.title}
+                    fallbackDescription={task.description}
                     isCreating={createPRMutation.isPending}
                     onClose={() => setCreatePRModalOpen(false)}
                     onCreate={handleConfirmCreatePR}

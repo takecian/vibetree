@@ -30,6 +30,18 @@
     "descriptionPlaceholder": "작업 설명 (선택사항)",
     "createButton": "작업 만들기"
   },
+  "createPR": {
+    "title": "풀 리퀘스트 만들기",
+    "titleLabel": "PR 제목",
+    "titlePlaceholder": "PR 제목을 입력하세요",
+    "descriptionLabel": "PR 설명",
+    "descriptionPlaceholder": "PR 설명을 입력하세요",
+    "baseBranchLabel": "베이스 브랜치",
+    "baseBranchPlaceholder": "예: main",
+    "loadingDefaultBranch": "기본 브랜치 로드 중...",
+    "generatingDraft": "변경 사항을 기반으로 PR 제목과 설명을 생성하는 중...",
+    "createButton": "PR 만들기"
+  },
   "repoModal": {
     "title": "설정",
     "subtitle": "저장소와 AI 어시스턴트를 설정합니다.",

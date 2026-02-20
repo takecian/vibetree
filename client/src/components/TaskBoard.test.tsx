@@ -5,6 +5,12 @@ import { vi } from 'vitest';
 
 vi.mock('../api/trpc', () => ({
   trpc: {
+    getConfig: {
+      useQuery: () => ({ data: [], isLoading: false }),
+    },
+    getRepositories: {
+      useQuery: () => ({ data: [], isLoading: false }),
+    },
     getTasks: {
       useQuery: () => ({ data: [], isLoading: false }),
     },
@@ -13,6 +19,11 @@ vi.mock('../api/trpc', () => ({
         mutateAsync: () => Promise.resolve({ id: 'new-task-id', title: 'New Task', description: '' }),
       }),
     },
+    useUtils: () => ({
+      getTasks: {
+        invalidate: vi.fn(),
+      },
+    }),
   },
 }));
 

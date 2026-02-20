@@ -48,6 +48,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "Browse Folder",
     "aiAssistant": "AI Assistant",
+    "defaultSuffix": "(default)",
     "defaultAiTool": "Default ({{tool}})",
     "checkingTools": "Checking tools...",
     "copyFiles": "Files to copy into worktrees",

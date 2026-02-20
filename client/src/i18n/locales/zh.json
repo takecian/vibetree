@@ -37,6 +37,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "浏览文件夹",
     "aiAssistant": "AI助手",
+    "defaultSuffix": "（默认）",
     "defaultAiTool": "默认（{{tool}}）",
     "checkingTools": "正在检查工具...",
     "copyFiles": "要复制到工作树的文件",

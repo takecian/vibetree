@@ -22,6 +22,7 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
     const [aiTool, setAiTool] = useState<string>('claude');
     const [copyFiles, setCopyFiles] = useState<string>('');
     const [worktreePath, setWorktreePath] = useState<string>('');
+    const defaultAiTool = initialConfig?.aiTool || 'claude';
 
     // tRPC Hooks
     const { data: availableTools = {}, isLoading: checkingTools } = trpc.getAiTools.useQuery();
@@ -59,8 +60,13 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
         setPath(e.target.value);
     };
 
-    const handleAiToolChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setAiTool(e.target.value);
+    const handleAiToolChange = (tool: string) => {
+        if (allowDefaultAiTool && tool === defaultAiTool) {
+            // In repository settings, selecting the global default tool means "inherit from global config".
+            setAiTool('');
+            return;
+        }
+        setAiTool(tool);
     };
 
     useEffect(() => {
@@ -128,23 +134,10 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                         <div className="mb-6">
                             <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiAssistant')}</label>
                             <div className="grid grid-cols-3 gap-3">
-                                {allowDefaultAiTool && (
-                                    <label className={getToolOptionClasses(aiTool === '', true)}>
-                                        <input
-                                            type="radio"
-                                            name="aiTool"
-                                            value=""
-                                            checked={aiTool === ''}
-                                            onChange={handleAiToolChange}
-                                            className="hidden"
-                                        />
-                                        <span className="font-medium">{t('repoModal.defaultAiTool', { tool: initialConfig?.aiTool || 'claude' })}</span>
-                                        <span className="text-blue-400 text-[10px]">◎</span>
-                                    </label>
-                                )}
                                 {['claude', 'codex', 'gemini'].map(tool => {
                                     const isAvailable = !!availableTools[tool as keyof typeof availableTools];
-                                    const isSelected = aiTool === tool;
+                                    const isDefaultTool = allowDefaultAiTool && tool === defaultAiTool;
+                                    const isSelected = (allowDefaultAiTool && aiTool === '' && isDefaultTool) || aiTool === tool;
                                     return (
                                         <label key={tool} className={getToolOptionClasses(isSelected, isAvailable)}>
                                             <input
@@ -152,11 +145,14 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                                                 name="aiTool"
                                                 value={tool}
                                                 checked={isSelected}
-                                                onChange={handleAiToolChange}
+                                                onChange={() => handleAiToolChange(tool)}
                                                 disabled={!isAvailable}
                                                 className="hidden"
                                             />
-                                            <span className="font-medium capitalize">{tool}</span>
+                                            <span className="font-medium capitalize">
+                                                {tool}
+                                                {isDefaultTool ? ` ${t('repoModal.defaultSuffix')}` : ''}
+                                            </span>
                                             {isAvailable ? <span className="text-green-500 text-[10px]">●</span> : <span className="text-slate-400 text-[10px]">○</span>}
                                         </label>
                                     );

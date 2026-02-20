@@ -37,6 +37,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "폴더 찾아보기",
     "aiAssistant": "AI 어시스턴트",
+    "defaultSuffix": "(기본값)",
     "defaultAiTool": "기본값 ({{tool}})",
     "checkingTools": "도구 확인 중...",
     "copyFiles": "작업 트리에 복사할 파일",

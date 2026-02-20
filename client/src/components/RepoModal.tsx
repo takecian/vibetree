@@ -41,7 +41,8 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        onSave(path.trim(), aiTool, copyFiles.trim(), worktreePath.trim());
+        const normalizedAiTool = allowDefaultAiTool && aiTool === defaultAiTool ? '' : aiTool;
+        onSave(path.trim(), normalizedAiTool, copyFiles.trim(), worktreePath.trim());
     };
 
     const handleBrowse = async () => {

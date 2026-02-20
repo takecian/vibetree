@@ -17,7 +17,7 @@ const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
 function AppContent() {
   const { t } = useTranslation();
-  const { config, updateConfig, repositories, loading, addRepository, deleteRepository, updateRepository } = useTasks();
+  const { config, updateConfig, repositories, loading, addRepository, deleteRepository } = useTasks();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
@@ -116,12 +116,8 @@ function AppContent() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       {(showAiToolOnlyModal || isAddingRepo || showSettings) && (
         <RepoModal
-          onSave={showSettings ? async (_path, aiTool, _copyFiles, worktreePath) => {
+          onSave={showSettings ? async (_path, aiTool) => {
             await updateConfig({ aiTool });
-            const activeRepo = activeTabId ? repositories.find(r => normalizePath(r.path) === activeTabId) : null;
-            if (activeRepo) {
-              await updateRepository(activeRepo.id, { worktreePath });
-            }
             setShowSettings(false);
           } : handleAddRepo}
           initialConfig={config}
@@ -134,7 +130,7 @@ function AppContent() {
           hideRepoPath={(showAiToolOnlyModal && !isAddingRepo) || showSettings}
           hideAiAssistant={isAddingRepo && !showAiToolOnlyModal && !showSettings}
           hideCopyFiles={showSettings}
-          hideWorktreePath={false}
+          hideWorktreePath={showSettings}
         />
       )}
 

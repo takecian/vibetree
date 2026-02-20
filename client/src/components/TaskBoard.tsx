@@ -7,6 +7,7 @@ import { Plus, Github, Settings, RefreshCw } from 'lucide-react';
 import { Task } from '../types';
 import { trpc } from '../api/trpc';
 import { RepoModal } from './RepoModal';
+import { StatusModal } from './StatusModal';
 
 interface TaskBoardProps {
     repoPath: string;
@@ -20,6 +21,7 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isRepoSettingsOpen, setIsRepoSettingsOpen] = useState<boolean>(false);
     const [isPulling, setIsPulling] = useState<boolean>(false);
+    const [pullResultDialog, setPullResultDialog] = useState<{ tone: 'success' | 'error'; title: string; message: string } | null>(null);
 
     // Fetch tasks for this specific repo
     const { data: tasks = [], isLoading: tasksLoading } = trpc.getTasks.useQuery({ repoPath });
@@ -51,12 +53,20 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
     const handlePullMainBranch = async () => {
         setIsPulling(true);
         try {
-            await pullMainBranchMutation.mutateAsync({ repoPath });
-            alert(t('taskList.pullSuccess'));
+            const result = await pullMainBranchMutation.mutateAsync({ repoPath });
+            setPullResultDialog({
+                tone: 'success',
+                title: t('taskList.pullSuccess'),
+                message: result.message || t('taskList.pullSuccess')
+            });
         } catch (error) {
             console.error('Pull failed:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`${t('taskList.pullError')}: ${errorMessage}`);
+            setPullResultDialog({
+                tone: 'error',
+                title: t('taskList.pullError'),
+                message: errorMessage
+            });
         } finally {
             setIsPulling(false);
         }
@@ -79,6 +89,15 @@ export function TaskBoard({ repoPath, selectedTaskId, onTaskSelect }: TaskBoardP
                     initialRepository={currentRepo}
                     onClose={() => setIsRepoSettingsOpen(false)}
                     allowDefaultAiTool={true}
+                />
+            )}
+
+            {pullResultDialog && (
+                <StatusModal
+                    onClose={() => setPullResultDialog(null)}
+                    title={pullResultDialog.title}
+                    message={pullResultDialog.message}
+                    tone={pullResultDialog.tone}
                 />
             )}
 

@@ -7,7 +7,7 @@ import { AppConfig } from '../types';
 interface RepoModalProps {
     onSave: (path: string, aiTool: string, copyFiles: string, worktreePath: string) => void;
     initialConfig: AppConfig | null;
-    initialRepository?: { copyFiles?: string; worktreePath?: string; aiTool?: string };
+    initialRepository?: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string };
     onClose?: () => void;
     hideRepoPath?: boolean;
     hideAiAssistant?: boolean;
@@ -28,13 +28,12 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
     const pickFolderMutation = trpc.pickFolder.useMutation();
 
     useEffect(() => {
-        if (initialConfig?.repoPath) setPath(initialConfig.repoPath);
+        if (initialRepository?.path !== undefined) setPath(initialRepository.path ?? '');
         if (allowDefaultAiTool && initialRepository) {
             setAiTool(initialRepository.aiTool ?? '');
         } else if (initialConfig?.aiTool) {
             setAiTool(initialConfig.aiTool);
         }
-        if (initialConfig?.copyFiles !== undefined) setCopyFiles(initialConfig.copyFiles ?? '');
         if (initialRepository?.copyFiles !== undefined) setCopyFiles(initialRepository.copyFiles ?? '');
         if (initialRepository?.worktreePath !== undefined) setWorktreePath(initialRepository.worktreePath ?? '');
     }, [initialConfig, initialRepository, allowDefaultAiTool]);

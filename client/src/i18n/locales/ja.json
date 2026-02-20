@@ -48,6 +48,7 @@
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "フォルダを選択",
     "aiAssistant": "AIアシスタント",
+    "defaultSuffix": "（デフォルト）",
     "defaultAiTool": "デフォルト（{{tool}}）",
     "checkingTools": "ツールを確認中...",
     "copyFiles": "ワークツリーにコピーするファイル",

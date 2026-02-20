@@ -23,6 +23,7 @@ export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDeta
     const { t } = useTranslation();
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
+    const { addTask, deleteTask } = useTasks();
     const { destroyTerminalSession } = useTerminals();
 
     // Constants

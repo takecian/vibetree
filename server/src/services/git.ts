@@ -183,7 +183,8 @@ async function createPR(repoPath: string, taskId: string, prData: { title: strin
 
     // Create PR using gh CLI
     try {
-        const bodyArg = prData.body ? `--body ${JSON.stringify(prData.body)}` : '';
+        const body = prData.body?.trim();
+        const bodyArg = body ? `--body ${JSON.stringify(body)}` : '';
         const titleArg = `--title ${JSON.stringify(prData.title)}`;
         const command = `gh pr create ${titleArg} ${bodyArg} --base ${JSON.stringify(prData.baseBranch)}`;
         const output = await runGit(command, worktreePath, repoPath);

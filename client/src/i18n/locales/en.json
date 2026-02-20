@@ -39,6 +39,7 @@
     "baseBranchLabel": "Base Branch",
     "baseBranchPlaceholder": "e.g. main",
     "loadingDefaultBranch": "Loading default branch...",
+    "generatingDraft": "Generating PR title and description from your changes...",
     "createButton": "Create PR"
   },
   "repoModal": {

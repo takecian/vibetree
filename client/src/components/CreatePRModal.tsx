@@ -4,27 +4,38 @@ import { trpc } from '../api/trpc';
 
 interface CreatePRModalProps {
     repoPath: string;
-    initialTitle: string;
-    initialDescription: string;
+    taskId: string;
+    fallbackTitle: string;
+    fallbackDescription: string;
     isCreating: boolean;
     onClose: () => void;
     onCreate: (title: string, body: string | undefined, baseBranch: string) => void;
 }
 
-export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCreating, onClose, onCreate }: CreatePRModalProps) {
+export function CreatePRModal({ repoPath, taskId, fallbackTitle, fallbackDescription, isCreating, onClose, onCreate }: CreatePRModalProps) {
     const { t } = useTranslation();
-    const [title, setTitle] = useState<string>(initialTitle);
-    const [body, setBody] = useState<string>(initialDescription);
+    const [title, setTitle] = useState<string>(fallbackTitle);
+    const [body, setBody] = useState<string>(fallbackDescription);
     const [baseBranch, setBaseBranch] = useState<string>('');
-
-    // Using simple tRPC query to get default branch
-    const { data: defaultBranch, isLoading: loadingDefaultBranch } = trpc.getDefaultBranch.useQuery({ repoPath });
+    const { data: defaultBranch } = trpc.getDefaultBranch.useQuery({ repoPath }, { refetchOnWindowFocus: false });
+    const { data: draft, isLoading: isGeneratingDraft } = trpc.generatePRDraft.useQuery(
+        { repoPath, taskId },
+        { refetchOnWindowFocus: false, retry: false }
+    );
 
     useEffect(() => {
-        if (defaultBranch) {
+        if (draft) {
+            setTitle(draft.title || fallbackTitle);
+            setBody(draft.body || fallbackDescription);
+            setBaseBranch(draft.baseBranch);
+        }
+    }, [draft, fallbackDescription, fallbackTitle]);
+
+    useEffect(() => {
+        if (defaultBranch && !baseBranch) {
             setBaseBranch(defaultBranch);
         }
-    }, [defaultBranch]);
+    }, [defaultBranch, baseBranch]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -63,7 +74,7 @@ export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCr
                             placeholder={t('createPR.titlePlaceholder')}
                             className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                             autoFocus
-                            disabled={isCreating}
+                            disabled={isCreating || isGeneratingDraft}
                         />
                     </div>
 
@@ -77,7 +88,7 @@ export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCr
                             placeholder={t('createPR.descriptionPlaceholder')}
                             className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-sm resize-y font-[inherit] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                             rows={4}
-                            disabled={isCreating}
+                            disabled={isCreating || isGeneratingDraft}
                         />
                     </div>
 
@@ -89,19 +100,22 @@ export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCr
                             type="text"
                             value={baseBranch}
                             onChange={(e) => setBaseBranch(e.target.value)}
-                            placeholder={loadingDefaultBranch ? t('createPR.loadingDefaultBranch') : t('createPR.baseBranchPlaceholder')}
+                            placeholder={isGeneratingDraft ? t('createPR.loadingDefaultBranch') : t('createPR.baseBranchPlaceholder')}
                             className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                            disabled={isCreating}
+                            disabled={isCreating || isGeneratingDraft}
                         />
                     </div>
+                    {isGeneratingDraft && (
+                        <p className="mb-4 text-sm text-slate-400">{t('createPR.generatingDraft')}</p>
+                    )}
 
                     <div className="flex justify-end gap-3">
-                        <button type="button" onClick={onClose} disabled={isCreating} className="px-5 py-2.5 bg-transparent text-slate-400 border border-slate-600 rounded-md font-medium cursor-pointer hover:bg-slate-600 hover:text-slate-50 disabled:opacity-50">
+                        <button type="button" onClick={onClose} disabled={isCreating || isGeneratingDraft} className="px-5 py-2.5 bg-transparent text-slate-400 border border-slate-600 rounded-md font-medium cursor-pointer hover:bg-slate-600 hover:text-slate-50 disabled:opacity-50">
                             {t('common.cancel')}
                         </button>
                         <button
                             type="submit"
-                            disabled={!title.trim() || !baseBranch.trim() || isCreating}
+                            disabled={!title.trim() || !baseBranch.trim() || isCreating || isGeneratingDraft}
                             className="px-5 py-2.5 bg-blue-500 text-white border-0 rounded-md font-medium cursor-pointer hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {isCreating ? (

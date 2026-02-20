@@ -249,9 +249,10 @@ export const appRouter = router({
             baseBranch: z.string(),
         }))
         .mutation(async ({ input }) => {
+            const body = input.body?.trim() || undefined;
             const result = await createPR(input.repoPath, input.taskId, {
                 title: input.title,
-                body: input.body,
+                body,
                 baseBranch: input.baseBranch,
             });
 

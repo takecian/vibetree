@@ -260,13 +260,13 @@ export function TaskDetail({ taskId, repoPath, onClose, onTaskSelect }: TaskDeta
         setCreatePRModalOpen(true);
     };
 
-    const handleConfirmCreatePR = async (title: string, body: string, baseBranch: string) => {
+    const handleConfirmCreatePR = async (title: string, body: string | undefined, baseBranch: string) => {
         try {
             const result = await createPRMutation.mutateAsync({
                 repoPath,
                 taskId: effectiveId,
                 title,
-                body,
+                ...(body ? { body } : {}),
                 baseBranch
             });
             if (result.success && result.url) {

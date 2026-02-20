@@ -8,7 +8,7 @@ interface CreatePRModalProps {
     initialDescription: string;
     isCreating: boolean;
     onClose: () => void;
-    onCreate: (title: string, body: string, baseBranch: string) => void;
+    onCreate: (title: string, body: string | undefined, baseBranch: string) => void;
 }
 
 export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCreating, onClose, onCreate }: CreatePRModalProps) {
@@ -29,7 +29,8 @@ export function CreatePRModal({ repoPath, initialTitle, initialDescription, isCr
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         if (title.trim() && baseBranch.trim()) {
-            onCreate(title.trim(), body.trim(), baseBranch.trim());
+            const trimmedBody = body.trim();
+            onCreate(title.trim(), trimmedBody || undefined, baseBranch.trim());
         }
     };
 

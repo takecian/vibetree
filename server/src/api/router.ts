@@ -42,7 +42,6 @@ export const appRouter = router({
             repoPath: z.string().optional(),
             aiTool: z.string().optional(),
             copyFiles: z.string().optional(),
-            worktreePath: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
             const state = ctx.getState();
@@ -53,7 +52,7 @@ export const appRouter = router({
                 const normalized = normalizePath(input.repoPath || '');
                 state.repoPath = normalized;
                 if (normalized) {
-                    addRepository(normalized, input.copyFiles, input.worktreePath);
+                    addRepository(normalized, input.copyFiles);
                 }
             }
             if (input.aiTool !== undefined) state.aiTool = input.aiTool;
@@ -66,15 +65,6 @@ export const appRouter = router({
                     updateRepository(repo.id, { copyFiles: input.copyFiles });
                 }
             }
-            if (input.worktreePath !== undefined) {
-                // Update worktreePath for active repo if it exists
-                const repo = getRepositoryByPath(state.repoPath);
-                if (repo) {
-                    const { updateRepository } = await import('../services/db');
-                    updateRepository(repo.id, { worktreePath: input.worktreePath });
-                }
-            }
-
             await saveConfig(state);
             return state;
         }),

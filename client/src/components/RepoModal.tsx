@@ -10,12 +10,13 @@ interface RepoModalProps {
     initialRepository?: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string };
     onClose?: () => void;
     hideAiAssistant?: boolean;
+    hideRepoPath?: boolean;
     hideCopyFiles?: boolean;
     hideWorktreePath?: boolean;
     allowDefaultAiTool?: boolean;
 }
 
-export function RepoModal({ onSave, initialConfig, initialRepository, onClose, hideAiAssistant, hideCopyFiles, hideWorktreePath, allowDefaultAiTool }: RepoModalProps) {
+export function RepoModal({ onSave, initialConfig, initialRepository, onClose, hideAiAssistant, hideRepoPath, hideCopyFiles, hideWorktreePath, allowDefaultAiTool }: RepoModalProps) {
     const { t } = useTranslation();
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
@@ -105,6 +106,31 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                 <h2 className="mt-0 text-slate-50">{t('repoModal.title')}</h2>
                 <p className="text-slate-400 mb-6">{t('repoModal.subtitle')}</p>
                 <form onSubmit={handleSubmit}>
+                    {!hideRepoPath && (
+                        <div className="mb-6">
+                            <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.repoPath')}</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={path}
+                                    onChange={handlePathChange}
+                                    placeholder={t('repoModal.repoPathPlaceholder')}
+                                    required
+                                    className="flex-1 p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleBrowse}
+                                    className="p-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-md text-slate-50 transition-colors flex items-center justify-center"
+                                    title={t('repoModal.browseFolderTitle')}
+                                    disabled={pickFolderMutation.isPending}
+                                >
+                                    <FolderOpen size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {!hideAiAssistant && (
                         <div className="mb-6">
                             <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiAssistant')}</label>

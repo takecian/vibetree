@@ -127,9 +127,9 @@ function AppContent() {
             setIsAddingRepo(false);
             setShowSettings(false);
           }}
-          hideRepoPath={showSettings || showAiToolOnlyModal}
-          hideCopyFiles={showSettings || showAiToolOnlyModal}
-          hideWorktreePath={showSettings || showAiToolOnlyModal}
+          hideRepoPath={!isAddingRepo}
+          hideCopyFiles={!isAddingRepo}
+          hideWorktreePath={!isAddingRepo}
         />
       )}
 

@@ -44,6 +44,7 @@
   "repoModal": {
     "title": "設定",
     "subtitle": "AIアシスタントを設定します。",
+    "repoPath": "リポジトリパス",
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "フォルダを選択",
     "aiAssistant": "AIアシスタント",

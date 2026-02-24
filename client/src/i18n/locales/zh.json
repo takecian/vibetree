@@ -33,6 +33,7 @@
   "repoModal": {
     "title": "配置",
     "subtitle": "设置您的AI助手。",
+    "repoPath": "存储库路径",
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "浏览文件夹",
     "aiAssistant": "AI助手",

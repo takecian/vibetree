@@ -45,6 +45,7 @@
   "repoModal": {
     "title": "Configuration",
     "subtitle": "Setup your AI assistant.",
+    "repoPath": "Repository Path",
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "Browse Folder",
     "aiAssistant": "AI Assistant",

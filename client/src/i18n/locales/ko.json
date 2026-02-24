@@ -45,6 +45,7 @@
   "repoModal": {
     "title": "설정",
     "subtitle": "AI 어시스턴트를 설정합니다.",
+    "repoPath": "저장소 경로",
     "repoPathPlaceholder": "/Users/username/projects/my-repo",
     "browseFolderTitle": "폴더 찾아보기",
     "aiAssistant": "AI 어시스턴트",

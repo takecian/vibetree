@@ -5,9 +5,9 @@ import { FolderOpen } from 'lucide-react';
 import { AppConfig } from '../types';
 
 interface RepoModalProps {
-    onSave: (path: string, aiTool: string, copyFiles: string, worktreePath: string) => void;
+    onSave: (path: string, aiTool: string, copyFiles: string, worktreePath: string, aiToolMode: string) => void;
     initialConfig: AppConfig | null;
-    initialRepository?: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string };
+    initialRepository?: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string; aiToolMode?: string };
     onClose?: () => void;
     hideAiAssistant?: boolean;
     hideRepoPath?: boolean;
@@ -20,6 +20,7 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
     const { t } = useTranslation();
     const [path, setPath] = useState<string>('');
     const [aiTool, setAiTool] = useState<string>('claude');
+    const [aiToolMode, setAiToolMode] = useState<string>('');
     const [copyFiles, setCopyFiles] = useState<string>('');
     const [worktreePath, setWorktreePath] = useState<string>('');
     const defaultAiTool = initialConfig?.aiTool || 'claude';
@@ -35,6 +36,7 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
         } else if (initialConfig?.aiTool) {
             setAiTool(initialConfig.aiTool);
         }
+        if (initialRepository?.aiToolMode !== undefined) setAiToolMode(initialRepository.aiToolMode ?? '');
         if (initialRepository?.copyFiles !== undefined) setCopyFiles(initialRepository.copyFiles ?? '');
         if (initialRepository?.worktreePath !== undefined) setWorktreePath(initialRepository.worktreePath ?? '');
     }, [initialConfig, initialRepository, allowDefaultAiTool]);
@@ -42,7 +44,7 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const normalizedAiTool = allowDefaultAiTool && aiTool === defaultAiTool ? '' : aiTool;
-        onSave(path.trim(), normalizedAiTool, copyFiles.trim(), worktreePath.trim());
+        onSave(path.trim(), normalizedAiTool, copyFiles.trim(), worktreePath.trim(), aiToolMode.trim());
     };
 
     const handleBrowse = async () => {
@@ -160,6 +162,23 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                                 })}
                             </div>
                             {checkingTools && <span className="text-xs text-slate-400 mt-2 block">{t('repoModal.checkingTools')}</span>}
+                        </div>
+                    )}
+
+                    {!hideAiAssistant && (
+                        <div className="mb-6">
+                            <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiToolMode')}</label>
+                            <select
+                                value={aiToolMode}
+                                onChange={(e) => setAiToolMode(e.target.value)}
+                                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">{t('repoModal.aiToolModeDefault')}</option>
+                                <option value="normal">{t('repoModal.aiToolModeNormal')}</option>
+                                <option value="plan">{t('repoModal.aiToolModePlan')}</option>
+                                <option value="dangerous-permission-less">{t('repoModal.aiToolModeDangerousPermissionLess')}</option>
+                            </select>
+                            <p className="text-xs text-slate-400 mt-1">{t('repoModal.aiToolModeHelp')}</p>
                         </div>
                     )}
 

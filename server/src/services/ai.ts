@@ -3,7 +3,7 @@ import util from 'util';
 
 const execAsync = util.promisify(exec);
 
-export async function generatePRSummary(tool: string, diff: string): Promise<{ title: string; body: string }> {
+export async function generatePRSummary(tool: string, diff: string, mode?: string): Promise<{ title: string; body: string }> {
     if (!tool) throw new Error("AI tool not configured");
 
     const prompt = `
@@ -25,7 +25,16 @@ ${diff}
         // Here we just call the tool with the prompt as an argument.
         // NOTE: Some tools might expect prompt from stdin. For now, we try passing as argument.
         // If it fails, we might need to pipe to stdin.
-        const { stdout, stderr } = await execAsync(`${tool} ${JSON.stringify(prompt)}`);
+        
+        // Build command with mode flag if specified
+        let command = tool;
+        if (mode) {
+            // Add the mode as a flag (e.g., --mode plan or --plan-mode)
+            // Different AI tools may have different syntax, we'll use a common pattern
+            command = `${tool} --mode ${mode}`;
+        }
+        
+        const { stdout, stderr } = await execAsync(`${command} ${JSON.stringify(prompt)}`);
 
         if (stderr && !stdout) {
             console.error(`AI tool error: ${stderr}`);

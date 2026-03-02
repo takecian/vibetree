@@ -67,9 +67,15 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
         if (allowDefaultAiTool && tool === defaultAiTool) {
             // In repository settings, selecting the global default tool means "inherit from global config".
             setAiTool('');
+            // Reset aiToolMode when switching away from Claude
+            setAiToolMode('');
             return;
         }
         setAiTool(tool);
+        // Reset aiToolMode when switching away from Claude (mode is only for Claude)
+        if (tool !== 'claude') {
+            setAiToolMode('');
+        }
     };
 
     useEffect(() => {
@@ -165,7 +171,7 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                         </div>
                     )}
 
-                    {!hideAiAssistant && (
+                    {!hideAiAssistant && aiTool === 'claude' && (
                         <div className="mb-6">
                             <label className="block mb-2 text-sm font-medium text-slate-50">{t('repoModal.aiToolMode')}</label>
                             <select

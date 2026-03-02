@@ -27,11 +27,14 @@ ${diff}
         // If it fails, we might need to pipe to stdin.
         
         // Build command with mode flag if specified
+        // For Claude Code, use actual flags: --plan or --dangerously-skip-permissions
         let command = tool;
         if (mode) {
-            // Add the mode as a flag (e.g., --mode plan or --plan-mode)
-            // Different AI tools may have different syntax, we'll use a common pattern
-            command = `${tool} --mode ${mode}`;
+            if (mode === 'plan') {
+                command = `${tool} --plan`;
+            } else if (mode === 'dangerously-skip-permissions') {
+                command = `${tool} --dangerously-skip-permissions`;
+            }
         }
         
         const { stdout, stderr } = await execAsync(`${command} ${JSON.stringify(prompt)}`);

@@ -174,9 +174,8 @@ export function RepoModal({ onSave, initialConfig, initialRepository, onClose, h
                                 className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-slate-50 text-base focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">{t('repoModal.aiToolModeDefault')}</option>
-                                <option value="normal">{t('repoModal.aiToolModeNormal')}</option>
                                 <option value="plan">{t('repoModal.aiToolModePlan')}</option>
-                                <option value="dangerous-permission-less">{t('repoModal.aiToolModeDangerousPermissionLess')}</option>
+                                <option value="dangerously-skip-permissions">{t('repoModal.aiToolModeDangerouslySkipPermissions')}</option>
                             </select>
                             <p className="text-xs text-slate-400 mt-1">{t('repoModal.aiToolModeHelp')}</p>
                         </div>

@@ -3,7 +3,7 @@ import util from 'util';
 
 const execAsync = util.promisify(exec);
 
-export async function generatePRSummary(tool: string, diff: string): Promise<{ title: string; body: string }> {
+export async function generatePRSummary(tool: string, diff: string, mode?: string): Promise<{ title: string; body: string }> {
     if (!tool) throw new Error("AI tool not configured");
 
     const prompt = `
@@ -25,7 +25,19 @@ ${diff}
         // Here we just call the tool with the prompt as an argument.
         // NOTE: Some tools might expect prompt from stdin. For now, we try passing as argument.
         // If it fails, we might need to pipe to stdin.
-        const { stdout, stderr } = await execAsync(`${tool} ${JSON.stringify(prompt)}`);
+        
+        // Build command with mode flag if specified
+        // For Claude Code, use actual flags: --plan or --dangerously-skip-permissions
+        let command = tool;
+        if (mode) {
+            if (mode === 'plan') {
+                command = `${tool} --plan`;
+            } else if (mode === 'dangerously-skip-permissions') {
+                command = `${tool} --dangerously-skip-permissions`;
+            }
+        }
+        
+        const { stdout, stderr } = await execAsync(`${command} ${JSON.stringify(prompt)}`);
 
         if (stderr && !stdout) {
             console.error(`AI tool error: ${stderr}`);

@@ -74,9 +74,9 @@ export const appRouter = router({
     }),
 
     addRepository: publicProcedure
-        .input(z.object({ path: z.string(), copyFiles: z.string().optional(), worktreePath: z.string().optional(), aiTool: z.string().optional() }))
+        .input(z.object({ path: z.string(), copyFiles: z.string().optional(), worktreePath: z.string().optional(), aiTool: z.string().optional(), aiToolMode: z.string().optional() }))
         .mutation(async ({ input }) => {
-            return addRepository(input.path, input.copyFiles, input.worktreePath, input.aiTool);
+            return addRepository(input.path, input.copyFiles, input.worktreePath, input.aiTool, input.aiToolMode);
         }),
     updateRepository: publicProcedure
         .input(z.object({
@@ -86,6 +86,7 @@ export const appRouter = router({
                 copyFiles: z.string().optional(),
                 worktreePath: z.string().optional(),
                 aiTool: z.string().optional(),
+                aiToolMode: z.string().optional(),
             }),
         }))
         .mutation(async ({ input }) => {
@@ -252,6 +253,7 @@ export const appRouter = router({
             }
 
             const effectiveAiTool = repo?.aiTool || ctx.getState().aiTool;
+            const effectiveAiToolMode = repo?.aiToolMode;
             if (!effectiveAiTool) {
                 return {
                     title: task.title,
@@ -261,7 +263,7 @@ export const appRouter = router({
             }
 
             try {
-                const summary = await generatePRSummary(effectiveAiTool, diff);
+                const summary = await generatePRSummary(effectiveAiTool, diff, effectiveAiToolMode);
                 return {
                     title: summary.title,
                     body: summary.body,
@@ -330,12 +332,14 @@ export const appRouter = router({
             const state = ctx.getState();
             if (!state.aiTool) throw new Error("AI tool not configured");
 
+            const repo = getRepositoryByPath(input.repoPath);
             const baseBranch = await getDefaultBranch(input.repoPath);
             const diff = await getBranchDiff(input.repoPath, input.taskId, baseBranch);
 
             if (!diff) return { success: true, message: "No changes found" };
 
-            const summary = await generatePRSummary(state.aiTool, diff);
+            const effectiveAiToolMode = repo?.aiToolMode;
+            const summary = await generatePRSummary(state.aiTool, diff, effectiveAiToolMode);
             return updatePR(input.repoPath, input.taskId, summary);
         }),
 

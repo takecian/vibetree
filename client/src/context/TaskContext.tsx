@@ -9,8 +9,8 @@ interface TaskContextType {
     updateConfig: (updates: Partial<AppConfig>) => Promise<void>;
     addTask: (repoPath: string, title: string, description: string) => Promise<Task>;
     deleteTask: (repoPath: string, taskId: string) => Promise<void>;
-    addRepository: (path: string, copyFiles?: string, worktreePath?: string, aiTool?: string) => Promise<Repository>;
-    updateRepository: (id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string }) => Promise<Repository>;
+    addRepository: (path: string, copyFiles?: string, worktreePath?: string, aiTool?: string, aiToolMode?: string) => Promise<Repository>;
+    updateRepository: (id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string; aiToolMode?: string }) => Promise<Repository>;
     deleteRepository: (id: string) => Promise<void>;
     createTaskMutation: ReturnType<typeof trpc.createTask.useMutation>;
 }
@@ -68,11 +68,11 @@ export function TaskProvider({ children }: TaskProviderProps) {
         await updateConfigMutation.mutateAsync(updates);
     };
 
-    const addRepository = async (path: string, copyFiles?: string, worktreePath?: string, aiTool?: string): Promise<Repository> => {
-        return await addRepositoryMutation.mutateAsync({ path, copyFiles, worktreePath, aiTool });
+    const addRepository = async (path: string, copyFiles?: string, worktreePath?: string, aiTool?: string, aiToolMode?: string): Promise<Repository> => {
+        return await addRepositoryMutation.mutateAsync({ path, copyFiles, worktreePath, aiTool, aiToolMode });
     };
 
-    const updateRepository = async (id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string }): Promise<Repository> => {
+    const updateRepository = async (id: string, updates: { path?: string; copyFiles?: string; worktreePath?: string; aiTool?: string; aiToolMode?: string }): Promise<Repository> => {
         return await updateRepositoryMutation.mutateAsync({ id, updates });
     };
 

@@ -17,7 +17,7 @@ const normalizePath = (p: string) => p.replace(/[/\\]+$/, '');
 
 function AppContent() {
   const { t } = useTranslation();
-  const { config, updateConfig, repositories, loading, addRepository, deleteRepository } = useTasks();
+  const { config, updateConfig, repositories, loading, addRepository, updateRepository, deleteRepository } = useTasks();
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showAiToolOnlyModal, setShowAiToolOnlyModal] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
